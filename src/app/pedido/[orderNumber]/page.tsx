@@ -97,13 +97,13 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ orderN
               ))}
             </ol>
 
-            {order.tracking?.tracking_code && (
+            {order.tracking_code && (
               <div className="rounded-md bg-muted p-4 text-sm">
                 <p>
-                  <strong>Transportadora:</strong> {order.tracking.carrier}
+                  <strong>Transportadora:</strong> {order.tracking?.carrier}
                 </p>
                 <p>
-                  <strong>Código:</strong> {order.tracking.tracking_code}
+                  <strong>Código:</strong> {order.tracking_code}
                 </p>
                 {order.tracking_url && (
                   <a href={order.tracking_url} className="text-primary underline" target="_blank" rel="noreferrer">
