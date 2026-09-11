@@ -16,6 +16,5 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   if (!order) notFound();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return <OrderDetailClient order={order as any} />;
 }
