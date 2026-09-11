@@ -27,8 +27,12 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isLoginPage = request.nextUrl.pathname === '/admin/login';
+  // O link de "recuperar senha" carrega o token na própria URL (fragmento #, não
+  // enviado ao servidor); a sessão só existe depois do JS do cliente processá-lo.
+  // Por isso essa rota precisa ficar acessível mesmo sem cookie de sessão ainda.
+  const isResetPasswordPage = request.nextUrl.pathname === '/admin/reset-password';
 
-  if (!user && !isLoginPage) {
+  if (!user && !isLoginPage && !isResetPasswordPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/admin/login';
     return NextResponse.redirect(url);
