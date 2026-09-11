@@ -26,7 +26,7 @@ export default async function ProductTestingDashboard() {
 
     return {
       offer,
-      ordersCount: offerOrders.length,
+      totalOrdersCount: offerOrders.length,
       conversion,
       ...result,
     };
@@ -56,7 +56,7 @@ export default async function ProductTestingDashboard() {
                 <TableRow key={row.offer.id}>
                   <TableCell>{row.offer.products?.name}</TableCell>
                   <TableCell className="font-medium">{row.offer.name}</TableCell>
-                  <TableCell>{row.ordersCount}</TableCell>
+                  <TableCell>{row.totalOrdersCount}</TableCell>
                   <TableCell>{(row.conversion * 100).toFixed(0)}%</TableCell>
                   <TableCell>{formatCentsToBRL(toCents(row.revenue))}</TableCell>
                   <TableCell>{formatCentsToBRL(toCents(row.cost))}</TableCell>
