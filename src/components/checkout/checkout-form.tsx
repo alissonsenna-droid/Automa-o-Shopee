@@ -28,11 +28,20 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+type PixResult = {
+  qrCode?: string;
+  qrCodeBase64?: string;
+  expiresAt?: string;
+};
+
 export function CheckoutForm({ sessionId }: { sessionId: string }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [idempotencyKey] = useState(() => nanoid());
+  const [pixResult, setPixResult] = useState<PixResult | null>(null);
+  const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const {
     register,
@@ -76,12 +85,79 @@ export function CheckoutForm({ sessionId }: { sessionId: string }) {
         return;
       }
 
+      // Pix: o pedido foi criado, mas o cliente ainda precisa pagar — mostramos
+      // o QR Code / copia-e-cola aqui em vez de já mandar para o
+      // acompanhamento (senão ele nunca veria como pagar).
+      if (values.payment_method === 'pix' && data.pix) {
+        setOrderNumber(data.order.order_number);
+        setPixResult(data.pix);
+        return;
+      }
+
       router.push(`/pedido/${data.order.order_number}`);
     } catch {
       setServerError('Erro de conexão. Tente novamente.');
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function copyPixCode() {
+    if (!pixResult?.qrCode) return;
+    try {
+      await navigator.clipboard.writeText(pixResult.qrCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API pode falhar em contexto não seguro; o campo readonly
+      // abaixo permite copiar manualmente como fallback.
+    }
+  }
+
+  if (pixResult) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Pague com Pix para confirmar seu pedido</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {pixResult.qrCodeBase64 && (
+            <img
+              src={`data:image/png;base64,${pixResult.qrCodeBase64}`}
+              alt="QR Code Pix"
+              className="mx-auto h-56 w-56 rounded-md border border-border"
+            />
+          )}
+
+          {pixResult.qrCode && (
+            <div>
+              <Label htmlFor="pix-copy-paste">Pix copia e cola</Label>
+              <div className="mt-1 flex gap-2">
+                <Input id="pix-copy-paste" readOnly value={pixResult.qrCode} className="font-mono text-xs" />
+                <Button type="button" onClick={copyPixCode} variant="outline">
+                  {copied ? 'Copiado!' : 'Copiar'}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {pixResult.expiresAt && (
+            <p className="text-sm text-muted-foreground">
+              Este Pix expira em <strong>{new Date(pixResult.expiresAt).toLocaleString('pt-BR')}</strong>. Após pagar,
+              a confirmação pode levar alguns instantes.
+            </p>
+          )}
+
+          <Button
+            type="button"
+            className="w-full"
+            onClick={() => orderNumber && router.push(`/pedido/${orderNumber}`)}
+          >
+            Já paguei — acompanhar pedido
+          </Button>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
