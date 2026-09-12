@@ -1,0 +1,11 @@
+-- O código de checkout (POST /api/orders) faz upsert de customers com
+-- onConflict: 'email'. Isso exige uma unique constraint (ou índice único)
+-- na própria coluna `email` — o índice único existente em lower(email)
+-- (migration 002) não serve como alvo de ON CONFLICT e causa o erro do
+-- Postgres 42P10 (invalid_column_reference) em produção.
+--
+-- Como o backend sempre grava o e-mail em minúsculas antes do upsert
+-- (input.customer.email.toLowerCase()), uma unique constraint simples na
+-- coluna email preserva a mesma garantia de unicidade case-insensitive do
+-- índice em lower(email).
+alter table customers add constraint customers_email_key unique (email);
