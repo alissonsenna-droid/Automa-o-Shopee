@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { completeAppmaxInstall } from '@/lib/appmax/install';
+import { AppmaxError } from '@/lib/appmax/types';
 
 /**
  * GET /api/setup/appmax/callback
@@ -26,7 +27,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, message: 'Instalação concluída — credenciais de merchant salvas.' });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Falha ao concluir instalação', details: error instanceof Error ? error.message : error },
+      {
+        error: 'Falha ao concluir instalação',
+        message: error instanceof Error ? error.message : String(error),
+        statusCode: error instanceof AppmaxError ? error.statusCode : undefined,
+        details: error instanceof AppmaxError ? error.details : undefined,
+      },
       { status: 500 },
     );
   }
