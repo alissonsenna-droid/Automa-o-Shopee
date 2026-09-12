@@ -163,6 +163,12 @@ export async function POST(request: NextRequest) {
         cardToken: input.payment.method === 'credit_card' ? input.payment.card_token : undefined,
       });
     } catch (paymentError) {
+      console.error(
+        'Falha ao criar pagamento na Appmax',
+        paymentError instanceof AppmaxError
+          ? { message: paymentError.message, statusCode: paymentError.statusCode, details: paymentError.details }
+          : paymentError,
+      );
       await supabase
         .from('orders')
         .update({ payment_status: 'pagamento_recusado', status: 'problem' })
