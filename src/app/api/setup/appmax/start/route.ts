@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { startAppmaxInstall } from '@/lib/appmax/install';
+import { AppmaxError } from '@/lib/appmax/types';
 
 /**
  * GET /api/setup/appmax/start
@@ -26,7 +27,12 @@ export async function GET() {
     return NextResponse.redirect(redirectUrl);
   } catch (error) {
     return NextResponse.json(
-      { error: 'Falha ao iniciar instalação', details: error instanceof Error ? error.message : error },
+      {
+        error: 'Falha ao iniciar instalação',
+        message: error instanceof Error ? error.message : String(error),
+        statusCode: error instanceof AppmaxError ? error.statusCode : undefined,
+        details: error instanceof AppmaxError ? error.details : undefined,
+      },
       { status: 500 },
     );
   }
