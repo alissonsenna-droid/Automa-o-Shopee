@@ -2,6 +2,7 @@ import 'server-only';
 import crypto from 'node:crypto';
 import { AppmaxError, type AppmaxCreatePaymentInput, type AppmaxCreatePaymentResult } from './types';
 import { mapPaymentStatus } from './mapStatus';
+import { getMerchantCredentials } from './install';
 
 // Confirmado contra a documentação oficial (docs.appmax.com.br) em 2026-09-12:
 // - Autenticação: domínio SEPARADO (auth.appmax.com.br), form-urlencoded.
@@ -19,13 +20,16 @@ function getApiBaseUrl(): string {
   return isProduction() ? PRODUCTION_API_BASE_URL : SANDBOX_API_BASE_URL;
 }
 
-function getCredentials() {
-  const apiKey = process.env.APPMAX_API_KEY;
-  const secret = process.env.APPMAX_SECRET;
-  if (!apiKey || !secret) {
-    throw new AppmaxError('Credenciais da Appmax não configuradas (APPMAX_API_KEY / APPMAX_SECRET).');
+async function getCredentials() {
+  // As chamadas transacionais (/v1/*) exigem credenciais de MERCHANT, não
+  // as credenciais do app (APPMAX_API_KEY/SECRET) — ver src/lib/appmax/install.ts.
+  const merchant = await getMerchantCredentials();
+  if (!merchant) {
+    throw new AppmaxError(
+      'App ainda não instalado/autorizado na Appmax (sem credenciais de merchant). Acesse /api/setup/appmax/start para concluir a instalação.',
+    );
   }
-  return { apiKey, secret };
+  return { apiKey: merchant.clientId, secret: merchant.clientSecret };
 }
 
 // Token OAuth2 fica em cache no processo (server) para evitar autenticar a
@@ -38,7 +42,7 @@ async function getAccessToken(): Promise<string> {
     return cachedToken.value;
   }
 
-  const { apiKey, secret } = getCredentials();
+  const { apiKey, secret } = await getCredentials();
 
   // A autenticação é sempre no domínio auth.appmax.com.br (não no domínio
   // da API), e o corpo é x-www-form-urlencoded — não JSON.
