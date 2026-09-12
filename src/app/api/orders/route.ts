@@ -147,9 +147,14 @@ export async function POST(request: NextRequest) {
     // Cria o pagamento na Appmax.
     let paymentResult;
     try {
+      const forwardedFor = request.headers.get('x-forwarded-for');
+      const customerIp = forwardedFor?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || undefined;
+
       paymentResult = await createPayment({
         orderNumber,
         amountCents: toCents(total),
+        shippingCents: toCents(shipping),
+        discountCents: toCents(discount),
         method: input.payment.method,
         customer: {
           name: input.customer.name,
@@ -161,6 +166,7 @@ export async function POST(request: NextRequest) {
         items: [{ sku: product.sku ?? product.id, name: product.name, quantity: session.quantity, unitPriceCents: toCents(session.price_snapshot) }],
         installments: input.payment.method === 'credit_card' ? input.payment.installments : undefined,
         cardToken: input.payment.method === 'credit_card' ? input.payment.card_token : undefined,
+        customerIp,
       });
     } catch (paymentError) {
       console.error(

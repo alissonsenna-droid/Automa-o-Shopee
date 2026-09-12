@@ -20,6 +20,8 @@ export interface AppmaxAddressInput {
 export interface AppmaxCreatePaymentInput {
   orderNumber: string;
   amountCents: number;
+  shippingCents?: number;
+  discountCents?: number;
   method: PaymentMethod;
   customer: AppmaxCustomerInput;
   address: AppmaxAddressInput;
@@ -27,6 +29,8 @@ export interface AppmaxCreatePaymentInput {
   installments?: number;
   cardToken?: string; // apenas para credit_card — nunca aceitar PAN em texto puro
   softDescriptor?: string;
+  /** IP do comprador (usado pela Appmax para antifraude na criação do cliente). */
+  customerIp?: string;
 }
 
 export interface AppmaxCreatePaymentResult {
