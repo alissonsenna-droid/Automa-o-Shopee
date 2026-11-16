@@ -8,9 +8,13 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const supabase = createSupabaseAdminClient();
-    let query = supabase.from('offers').select('*, products(name, images)').order('created_at', { ascending: false });
+    let query = supabase
+      .from('offers')
+      .select('*, products(name, slug, images, category, description)')
+      .order('created_at', { ascending: false });
     if (searchParams.get('active') != null) query = query.eq('active', searchParams.get('active') === 'true');
     if (searchParams.get('product_id')) query = query.eq('product_id', searchParams.get('product_id') as string);
+    if (searchParams.get('category')) query = query.eq('products.category', searchParams.get('category') as string);
     const { data, error } = await query;
     if (error) throw error;
     return NextResponse.json({ offers: data });

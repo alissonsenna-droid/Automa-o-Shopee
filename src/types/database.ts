@@ -37,6 +37,7 @@ export interface Product {
   compare_price: number | null;
   cost_price: number;
   images: string[];
+  category: string;
   active: boolean;
   metadata: Record<string, unknown>;
   created_at: string;

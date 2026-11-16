@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { formatCentsToBRL, toCents } from '@/lib/utils';
 import type { Product } from '@/types/database';
 
-const emptyForm = { name: '', slug: '', sku: '', price: '', compare_price: '', cost_price: '' };
+const emptyForm = { name: '', slug: '', sku: '', price: '', compare_price: '', cost_price: '', category: 'geral' };
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -41,6 +41,7 @@ export default function ProductsPage() {
         price: Number(form.price),
         compare_price: form.compare_price ? Number(form.compare_price) : undefined,
         cost_price: Number(form.cost_price),
+        category: form.category || 'geral',
       }),
     });
     setSaving(false);
@@ -87,6 +88,10 @@ export default function ProductsPage() {
                 <Label>Custo</Label>
                 <Input type="number" step="0.01" value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} required />
               </div>
+              <div>
+                <Label>Categoria</Label>
+                <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="ex: eletronicos, moda, casa" />
+              </div>
               <div className="col-span-2">
                 <Button type="submit" disabled={saving}>
                   {saving ? 'Salvando...' : 'Criar produto'}
@@ -104,6 +109,7 @@ export default function ProductsPage() {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>SKU</TableHead>
+                <TableHead>Categoria</TableHead>
                 <TableHead>Preço</TableHead>
                 <TableHead>Custo</TableHead>
                 <TableHead>Status</TableHead>
@@ -114,6 +120,7 @@ export default function ProductsPage() {
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell>{p.sku ?? '—'}</TableCell>
+                  <TableCell>{p.category}</TableCell>
                   <TableCell>{formatCentsToBRL(toCents(p.price))}</TableCell>
                   <TableCell>{formatCentsToBRL(toCents(p.cost_price))}</TableCell>
                   <TableCell>

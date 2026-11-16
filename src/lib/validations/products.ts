@@ -9,6 +9,7 @@ export const productSchema = z.object({
   compare_price: z.number().nonnegative().optional().nullable(),
   cost_price: z.number().nonnegative(),
   images: z.array(z.string().url()).default([]),
+  category: z.string().min(2).max(60).default('geral'),
   active: z.boolean().default(true),
   metadata: z.record(z.unknown()).default({}),
 });
