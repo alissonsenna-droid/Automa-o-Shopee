@@ -15,6 +15,7 @@ import {
   Truck,
   Users,
   PlayCircle,
+  Banknote,
   LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -25,6 +26,7 @@ const NAV = [
   { href: '/admin/actions', label: 'Ações pendentes', icon: AlertCircle },
   { href: '/admin/orders', label: 'Pedidos', icon: ShoppingCart },
   { href: '/admin/process', label: 'Processar pedidos', icon: PlayCircle },
+  { href: '/admin/pix', label: 'Pagamentos Pix', icon: Banknote },
   { href: '/admin/products', label: 'Produtos', icon: Package },
   { href: '/admin/offers', label: 'Ofertas', icon: Tag },
   { href: '/admin/suppliers', label: 'Fornecedores', icon: Truck },

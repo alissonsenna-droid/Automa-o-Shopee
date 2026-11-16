@@ -49,6 +49,7 @@ export default async function AdminDashboardPage() {
 
   const quickActions = [
     { href: '/admin/process', label: 'PROCESSAR PEDIDOS' },
+    { href: '/admin/pix', label: 'PAGAR PEDIDOS' },
     { href: '/admin/orders', label: 'VER PEDIDOS' },
     { href: '/admin/actions', label: 'VER PROBLEMAS' },
     { href: '/admin/analytics/products', label: 'RELATÓRIOS' },
