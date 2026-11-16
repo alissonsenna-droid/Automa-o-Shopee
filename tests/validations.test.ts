@@ -41,7 +41,7 @@ describe('submitCheckoutSchema', () => {
 
 describe('duplicateOfferSchema', () => {
   it('exige nome e slug válidos', () => {
-    expect(duplicateOfferSchema.safeParse({ name: 'X', slug: 'Slug Invalido' }).success).toBe(false);
-    expect(duplicateOfferSchema.safeParse({ name: 'X', slug: 'slug-valido' }).success).toBe(true);
+    expect(duplicateOfferSchema.safeParse({ name: 'Oferta X', slug: 'Slug Invalido' }).success).toBe(false);
+    expect(duplicateOfferSchema.safeParse({ name: 'Oferta X', slug: 'slug-valido' }).success).toBe(true);
   });
 });

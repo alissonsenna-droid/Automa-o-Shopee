@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { FazzoLogo } from '@/components/brand/fazzo-logo';
 
 // Este projeto é o SISTEMA CENTRAL (não uma landing page de vendas).
 // Esta página raiz é apenas um painel de status/links úteis para quem
@@ -6,10 +7,10 @@ import Link from 'next/link';
 export default function HomePage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-6 p-8 text-center">
-      <h1 className="text-2xl font-semibold">DropBR</h1>
+      <FazzoLogo textSize="text-4xl" />
       <p className="text-muted-foreground">
-        Este é o sistema central (backend + admin + checkout). Landing pages de
-        vendas ficam fora deste projeto e se conectam via API.
+        Este é o sistema central (backend + admin + checkout) da Fazzo. Landing
+        pages de vendas ficam fora deste projeto e se conectam via API.
       </p>
       <div className="flex gap-4">
         <Link href="/admin" className="rounded-md bg-primary px-4 py-2 text-primary-foreground">

@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
     <main className="flex min-h-screen items-center justify-center p-6">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>DropBR — Painel</CardTitle>
+          <CardTitle>Fazzo — Painel</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">

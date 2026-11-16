@@ -15,6 +15,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { FazzoLogo } from '@/components/brand/fazzo-logo';
 
 const NAV = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -40,7 +41,9 @@ export function AdminSidebar() {
 
   return (
     <aside className="flex h-screen w-60 shrink-0 flex-col border-r border-border bg-card">
-      <div className="p-4 text-lg font-semibold">DropBR</div>
+      <div className="p-4">
+        <FazzoLogo textSize="text-xl" />
+      </div>
       <nav className="flex-1 space-y-1 px-2">
         {NAV.map(({ href, label, icon: Icon }) => (
           <Link

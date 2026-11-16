@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { notFound } from 'next/navigation';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { OrderDetailClient } from './order-detail-client';
@@ -16,5 +17,5 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   if (!order) notFound();
 
-  return <OrderDetailClient order={order as any} />;
+  return <OrderDetailClient order={order as ComponentProps<typeof OrderDetailClient>['order']} />;
 }

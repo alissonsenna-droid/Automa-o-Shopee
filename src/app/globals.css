@@ -4,30 +4,49 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    /* Fazzo — identidade de marca */
+    --font-poppins: 'Poppins', system-ui, sans-serif;
+    --font-inter: 'Inter', system-ui, sans-serif;
+    --background: 228 33% 97%;
+    --foreground: 256 25% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --border: 214 32% 91%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --primary: 222 89% 55%;
+    --card-foreground: 256 25% 12%;
+    --border: 251 22% 90%;
+    --muted: 251 22% 94%;
+    --muted-foreground: 261 9% 43%;
+    --primary: 254 73% 24%;
     --primary-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
+    --accent: 181 86% 33%;
+    --accent-foreground: 0 0% 100%;
+    --highlight: 327 100% 45%;
+    --highlight-foreground: 0 0% 100%;
+    --success: 158 79% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 36 90% 56%;
+    --warning-foreground: 256 25% 12%;
+    --destructive: 358 75% 59%;
     --destructive-foreground: 0 0% 100%;
   }
 
   .dark {
-    --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
-    --card: 222 44% 11%;
-    --card-foreground: 210 40% 98%;
-    --border: 217 33% 20%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
-    --destructive: 0 63% 45%;
+    --background: 256 45% 10%;
+    --foreground: 250 20% 96%;
+    --card: 256 35% 14%;
+    --card-foreground: 250 20% 96%;
+    --border: 256 20% 24%;
+    --muted: 256 20% 20%;
+    --muted-foreground: 256 10% 65%;
+    --primary: 254 65% 60%;
+    --primary-foreground: 256 45% 10%;
+    --accent: 181 70% 45%;
+    --accent-foreground: 256 45% 10%;
+    --highlight: 327 85% 58%;
+    --highlight-foreground: 256 45% 10%;
+    --success: 158 60% 48%;
+    --success-foreground: 256 45% 10%;
+    --warning: 36 85% 62%;
+    --warning-foreground: 256 45% 10%;
+    --destructive: 358 70% 55%;
     --destructive-foreground: 0 0% 100%;
   }
 
