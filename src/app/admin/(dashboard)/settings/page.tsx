@@ -14,22 +14,27 @@ interface CompanySettings {
   whatsapp: string;
 }
 
+interface ProcessingSettings {
+  min_margin_percent: number;
+}
+
 export default function SettingsPage() {
   const [company, setCompany] = useState<CompanySettings>({ name: '', cnpj: '', email: '', whatsapp: '' });
+  const [processing, setProcessing] = useState<ProcessingSettings>({ min_margin_percent: 10 });
   const [saving, setSaving] = useState(false);
+  const [savingProcessing, setSavingProcessing] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
-    supabase
-      .from('system_settings')
-      .select('value')
-      .eq('key', 'company')
-      .single()
-      .then(({ data }) => {
-        if (data?.value) setCompany(data.value as CompanySettings);
-        setLoaded(true);
-      });
+    Promise.all([
+      supabase.from('system_settings').select('value').eq('key', 'company').maybeSingle(),
+      supabase.from('system_settings').select('value').eq('key', 'processing').maybeSingle(),
+    ]).then(([companyRes, processingRes]) => {
+      if (companyRes.data?.value) setCompany(companyRes.data.value as CompanySettings);
+      if (processingRes.data?.value) setProcessing(processingRes.data.value as ProcessingSettings);
+      setLoaded(true);
+    });
   }, []);
 
   async function save() {
@@ -37,6 +42,13 @@ export default function SettingsPage() {
     const supabase = createSupabaseBrowserClient();
     await supabase.from('system_settings').upsert({ key: 'company', value: company, updated_at: new Date().toISOString() });
     setSaving(false);
+  }
+
+  async function saveProcessing() {
+    setSavingProcessing(true);
+    const supabase = createSupabaseBrowserClient();
+    await supabase.from('system_settings').upsert({ key: 'processing', value: processing, updated_at: new Date().toISOString() });
+    setSavingProcessing(false);
   }
 
   if (!loaded) return <p className="text-sm text-muted-foreground">Carregando...</p>;
@@ -67,6 +79,30 @@ export default function SettingsPage() {
           </div>
           <Button onClick={save} disabled={saving}>
             {saving ? 'Salvando...' : 'Salvar'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Processamento de pedidos</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Margem mínima (%)</Label>
+            <Input
+              type="number"
+              step="0.1"
+              value={processing.min_margin_percent}
+              onChange={(e) => setProcessing({ min_margin_percent: Number(e.target.value) })}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Pedidos com margem abaixo disso viram &quot;problema&quot; em vez de serem aprovados sozinhos em
+              Processar Pedidos.
+            </p>
+          </div>
+          <Button onClick={saveProcessing} disabled={savingProcessing}>
+            {savingProcessing ? 'Salvando...' : 'Salvar'}
           </Button>
         </CardContent>
       </Card>

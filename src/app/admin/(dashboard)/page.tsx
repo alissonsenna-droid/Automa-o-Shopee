@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { calculateOrderProfit } from '@/lib/financial';
 import { formatCentsToBRL, toCents } from '@/lib/utils';
@@ -46,9 +47,29 @@ export default async function AdminDashboardPage() {
     { label: 'Entregues', value: String(deliveredCount ?? 0) },
   ];
 
+  const quickActions = [
+    { href: '/admin/process', label: 'PROCESSAR PEDIDOS' },
+    { href: '/admin/orders', label: 'VER PEDIDOS' },
+    { href: '/admin/actions', label: 'VER PROBLEMAS' },
+    { href: '/admin/analytics/products', label: 'RELATÓRIOS' },
+  ];
+
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Dashboard</h1>
+
+      <div className="flex flex-wrap gap-3">
+        {quickActions.map((a) => (
+          <Link
+            key={a.href}
+            href={a.href}
+            className="rounded-md bg-primary px-5 py-3 text-sm font-bold text-primary-foreground hover:opacity-90"
+          >
+            {a.label}
+          </Link>
+        ))}
+      </div>
+
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {cards.map((c) => (
           <Card key={c.label}>
