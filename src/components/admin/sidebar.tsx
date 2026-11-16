@@ -12,6 +12,8 @@ import {
   AlertCircle,
   Settings,
   BarChart3,
+  Truck,
+  Users,
   LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -23,6 +25,8 @@ const NAV = [
   { href: '/admin/orders', label: 'Pedidos', icon: ShoppingCart },
   { href: '/admin/products', label: 'Produtos', icon: Package },
   { href: '/admin/offers', label: 'Ofertas', icon: Tag },
+  { href: '/admin/suppliers', label: 'Fornecedores', icon: Truck },
+  { href: '/admin/customers', label: 'Clientes', icon: Users },
   { href: '/admin/landing-pages', label: 'Landing pages', icon: Link2 },
   { href: '/admin/analytics/products', label: 'Teste de produtos', icon: BarChart3 },
   { href: '/admin/settings', label: 'Configurações', icon: Settings },
