@@ -9,3 +9,4 @@ out
 coverage
 .vercel
 tsconfig.tsbuildinfo
+.env*
