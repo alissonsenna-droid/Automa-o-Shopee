@@ -100,12 +100,24 @@ async function safeJson(res: Response): Promise<unknown> {
   }
 }
 
-/** Normaliza qualquer erro de resposta da Appmax em um AppmaxError previsível. */
+/**
+ * Normaliza qualquer erro de resposta da Appmax em um AppmaxError previsível.
+ *
+ * A Appmax não usa um formato de erro único — confirmado ao vivo em
+ * produção (2026-11-17), endpoints diferentes devolvem a mensagem em
+ * lugares diferentes: `{"message": "..."}` (ex: pedido/merchant não
+ * encontrado) ou `{"errors": {"message": "...", "reason": N}}` (ex:
+ * cartão recusado). Checa os dois formatos antes de cair no genérico.
+ */
 export function handleAppmaxError(statusCode: number, details: unknown): AppmaxError {
+  const obj = typeof details === 'object' && details !== null ? (details as Record<string, unknown>) : null;
+  const nestedErrors = obj && typeof obj.errors === 'object' && obj.errors !== null ? (obj.errors as Record<string, unknown>) : null;
+
   const message =
-    typeof details === 'object' && details !== null && 'message' in details
-      ? String((details as { message?: unknown }).message)
-      : `Erro na Appmax (HTTP ${statusCode})`;
+    (obj && typeof obj.message === 'string' && obj.message) ||
+    (nestedErrors && typeof nestedErrors.message === 'string' && nestedErrors.message) ||
+    `Erro na Appmax (HTTP ${statusCode})`;
+
   return new AppmaxError(message, statusCode, details);
 }
 

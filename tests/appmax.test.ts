@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mapPaymentStatus, orderStatusFromPaymentStatus } from '@/lib/appmax/mapStatus';
 import { parseAppmaxWebhook } from '@/lib/appmax/webhook';
-import { stripDataUriPrefix } from '@/lib/appmax/client';
+import { stripDataUriPrefix, handleAppmaxError } from '@/lib/appmax/client';
 
 describe('mapPaymentStatus', () => {
   it('mapeia status conhecidos', () => {
@@ -93,5 +93,30 @@ describe('stripDataUriPrefix', () => {
 
   it('retorna undefined para undefined', () => {
     expect(stripDataUriPrefix(undefined)).toBeUndefined();
+  });
+});
+
+describe('handleAppmaxError', () => {
+  it('extrai a mensagem de um erro com message no topo (ex: merchant/pedido não encontrado)', () => {
+    const err = handleAppmaxError(404, { message: 'Merchant not found' });
+    expect(err.message).toBe('Merchant not found');
+    expect(err.statusCode).toBe(404);
+  });
+
+  it('extrai a mensagem de um erro aninhado em errors.message (ex: cartão recusado, confirmado ao vivo)', () => {
+    const err = handleAppmaxError(400, {
+      errors: { message: 'Pagamento não autorizado: Transação recusada pelo emissor - revise os dados do cartão.', reason: 800 },
+    });
+    expect(err.message).toBe('Pagamento não autorizado: Transação recusada pelo emissor - revise os dados do cartão.');
+  });
+
+  it('cai no genérico quando não reconhece o formato', () => {
+    const err = handleAppmaxError(500, { something: 'else' });
+    expect(err.message).toBe('Erro na Appmax (HTTP 500)');
+  });
+
+  it('cai no genérico quando details é null ou não é objeto', () => {
+    expect(handleAppmaxError(500, null).message).toBe('Erro na Appmax (HTTP 500)');
+    expect(handleAppmaxError(500, 'texto qualquer').message).toBe('Erro na Appmax (HTTP 500)');
   });
 });
