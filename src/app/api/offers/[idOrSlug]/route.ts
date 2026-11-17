@@ -6,13 +6,21 @@ import { logAudit } from '@/lib/audit';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** GET /api/offers/[slug] — leitura pública por slug (usado pelo checkout/landing page). */
+/**
+ * GET /api/offers/[slug] — leitura pública por slug (usado pelo
+ * checkout/landing page). `products(*)` vazava `cost_price` pra qualquer
+ * um — restrito aos campos que uma landing page/checkout realmente precisa.
+ */
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ idOrSlug: string }> }) {
   try {
     const { idOrSlug } = await params;
     const supabase = createSupabaseAdminClient();
     const column = UUID_RE.test(idOrSlug) ? 'id' : 'slug';
-    const { data, error } = await supabase.from('offers').select('*, products(*)').eq(column, idOrSlug).single();
+    const { data, error } = await supabase
+      .from('offers')
+      .select('*, products(id, name, slug, description, images, category, active)')
+      .eq(column, idOrSlug)
+      .single();
     if (error || !data) return NextResponse.json({ error: 'Oferta não encontrada.' }, { status: 404 });
     return NextResponse.json({ offer: data });
   } catch (error) {

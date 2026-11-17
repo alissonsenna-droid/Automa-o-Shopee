@@ -4,8 +4,16 @@ import { productSchema } from '@/lib/validations/products';
 import { handleApiError, requireStaff } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 
+/**
+ * GET /api/products — uso do painel admin (lista completa, com custo e SKU).
+ * NÃO é a leitura pública de produto — essa é GET /api/offers (sem
+ * cost_price) e GET /api/products/[slug] (produto único, também sem
+ * cost_price). Faltava essa checagem aqui: qualquer um conseguia ver o
+ * custo de cada produto sem login.
+ */
 export async function GET(request: NextRequest) {
   try {
+    await requireStaff();
     const { searchParams } = new URL(request.url);
     const supabase = createSupabaseAdminClient();
     let query = supabase.from('products').select('*').order('created_at', { ascending: false });

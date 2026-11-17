@@ -1,9 +1,26 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FazzoLogo } from '@/components/brand/fazzo-logo';
 
-const CATEGORIES = ['eletronicos', 'moda', 'casa', 'pet', 'beleza'] as const;
-
 export function StorefrontHeader() {
+  // As categorias do menu vêm das ofertas ativas de verdade, não de uma
+  // lista fixa. Uma lista fixa (ex: eletronicos/moda/casa/pet/beleza)
+  // ficava sem nenhum produto real embaixo assim que o catálogo da loja
+  // usasse categorias diferentes — o cliente navegava e achava a loja vazia.
+  const [categories, setCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('/api/offers?active=true')
+      .then((r) => r.json())
+      .then((data: { offers?: Array<{ products?: { category?: string } | null }> }) => {
+        const unique = [...new Set((data.offers ?? []).map((o) => o.products?.category).filter((c): c is string => !!c))];
+        setCategories(unique);
+      })
+      .catch(() => setCategories([]));
+  }, []);
+
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-primary text-white">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3">
@@ -33,13 +50,15 @@ export function StorefrontHeader() {
             Meus pedidos
           </Link>
         </div>
-        <nav className="flex items-center gap-4 overflow-x-auto text-sm font-medium">
-          {CATEGORIES.map((c) => (
-            <Link key={c} href={`/categoria/${c}`} className="shrink-0 capitalize text-white/85 hover:text-white">
-              {c}
-            </Link>
-          ))}
-        </nav>
+        {categories.length > 0 && (
+          <nav className="flex items-center gap-4 overflow-x-auto text-sm font-medium">
+            {categories.map((c) => (
+              <Link key={c} href={`/categoria/${c}`} className="shrink-0 capitalize text-white/85 hover:text-white">
+                {c}
+              </Link>
+            ))}
+          </nav>
+        )}
       </div>
     </header>
   );

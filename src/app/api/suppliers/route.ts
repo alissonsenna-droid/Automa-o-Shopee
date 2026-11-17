@@ -4,8 +4,10 @@ import { supplierSchema } from '@/lib/validations/suppliers';
 import { handleApiError, requireStaff } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 
+/** GET /api/suppliers — uso do painel admin. Sem isso, nome/contato/notas de fornecedor ficavam públicos. */
 export async function GET() {
   try {
+    await requireStaff();
     const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase.from('suppliers').select('*').order('name');
     if (error) throw error;

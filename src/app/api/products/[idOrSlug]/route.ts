@@ -6,13 +6,22 @@ import { logAudit } from '@/lib/audit';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** GET /api/products/[slug] — leitura pública por slug (usado por landing pages/preview). */
+/**
+ * GET /api/products/[slug] — leitura pública por slug (usado por landing
+ * pages/preview). Por ser pública, seleciona só os campos que não vazam
+ * dado interno — sem `cost_price`, `sku` nem `metadata` (estavam vazando
+ * com `select('*')`: qualquer um conseguia ver o custo de cada produto).
+ */
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ idOrSlug: string }> }) {
   try {
     const { idOrSlug } = await params;
     const supabase = createSupabaseAdminClient();
     const column = UUID_RE.test(idOrSlug) ? 'id' : 'slug';
-    const { data, error } = await supabase.from('products').select('*').eq(column, idOrSlug).single();
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, name, slug, description, price, compare_price, images, category, active, created_at, updated_at')
+      .eq(column, idOrSlug)
+      .single();
     if (error || !data) return NextResponse.json({ error: 'Produto não encontrado.' }, { status: 404 });
     return NextResponse.json({ product: data });
   } catch (error) {

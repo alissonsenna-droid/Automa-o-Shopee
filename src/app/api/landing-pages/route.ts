@@ -4,8 +4,10 @@ import { landingPageSchema } from '@/lib/validations/suppliers';
 import { handleApiError, requireStaff } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 
+/** GET /api/landing-pages — uso do painel admin. Sem isso, a lista de landing pages/campanhas era pública. */
 export async function GET() {
   try {
+    await requireStaff();
     const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
       .from('landing_pages')
