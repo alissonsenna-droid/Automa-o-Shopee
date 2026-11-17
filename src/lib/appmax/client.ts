@@ -269,3 +269,19 @@ export async function getPayment(transactionId: string): Promise<{ status: strin
   });
   return { status: data.data.order.status, raw: data };
 }
+
+/**
+ * POST /v1/orders/shipping-tracking-code — confirmado contra
+ * docs.appmax.com.br/api-reference/orders/codigo-rastreio e testado ao
+ * vivo em produção. **Crítico pro negócio, não é só um registro**: a
+ * própria doc diz "para que os saques do merchant sejam aprovados, é
+ * necessário atualizar o pedido com o código de rastreamento" — sem essa
+ * chamada, o dinheiro das vendas físicas pode ficar retido na Appmax
+ * mesmo com o pedido pago e entregue.
+ */
+export async function updateShippingTrackingCode(transactionId: string, trackingCode: string): Promise<void> {
+  await appmaxFetch('/v1/orders/shipping-tracking-code', {
+    method: 'POST',
+    body: JSON.stringify({ order_id: Number(transactionId), shipping_tracking_code: trackingCode }),
+  });
+}

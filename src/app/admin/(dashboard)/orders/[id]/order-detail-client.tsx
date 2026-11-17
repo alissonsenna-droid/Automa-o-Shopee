@@ -29,6 +29,7 @@ export function OrderDetailClient({ order }: Props) {
   const [notes, setNotes] = useState(order.notes ?? '');
   const [savingNotes, setSavingNotes] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [trackingWarning, setTrackingWarning] = useState<string | null>(null);
 
   const profit = calculateOrderProfit(order);
   const isFinalized = order.status === 'cancelled' || order.status === 'refunded';
@@ -71,11 +72,14 @@ export function OrderDetailClient({ order }: Props) {
     e.preventDefault();
     if (!supplierOrder) return;
     setSavingTracking(true);
-    await fetch(`/api/supplier-orders/${supplierOrder.id}/tracking`, {
+    setTrackingWarning(null);
+    const res = await fetch(`/api/supplier-orders/${supplierOrder.id}/tracking`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(tracking),
     });
+    const data = await res.json();
+    if (data.warning) setTrackingWarning(data.warning);
     setSavingTracking(false);
     router.refresh();
   }
@@ -178,6 +182,7 @@ export function OrderDetailClient({ order }: Props) {
                 <Button type="submit" variant="outline" disabled={savingTracking}>
                   {savingTracking ? 'Salvando...' : 'Salvar rastreamento'}
                 </Button>
+                {trackingWarning && <p className="mt-2 text-sm text-destructive">{trackingWarning}</p>}
               </div>
             </form>
           </CardContent>
