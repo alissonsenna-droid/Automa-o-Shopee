@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mapPaymentStatus, orderStatusFromPaymentStatus } from '@/lib/appmax/mapStatus';
 import { parseAppmaxWebhook } from '@/lib/appmax/webhook';
+import { stripDataUriPrefix } from '@/lib/appmax/client';
 
 describe('mapPaymentStatus', () => {
   it('mapeia status conhecidos', () => {
@@ -78,5 +79,19 @@ describe('parseAppmaxWebhook', () => {
     const b = parseAppmaxWebhook({ event: 'OrderPaid', data: { status: 'aprovado' } });
     expect(a.eventId).toBe(b.eventId);
     expect(a.eventId).toMatch(/^fallback-/);
+  });
+});
+
+describe('stripDataUriPrefix', () => {
+  it('remove o prefixo data:image/...;base64, quando presente (resposta real do Pix da Appmax)', () => {
+    expect(stripDataUriPrefix('data:image/png;base64,iVBORw0KGgo=')).toBe('iVBORw0KGgo=');
+  });
+
+  it('mantém o valor como está se já vier sem prefixo', () => {
+    expect(stripDataUriPrefix('iVBORw0KGgo=')).toBe('iVBORw0KGgo=');
+  });
+
+  it('retorna undefined para undefined', () => {
+    expect(stripDataUriPrefix(undefined)).toBeUndefined();
   });
 });

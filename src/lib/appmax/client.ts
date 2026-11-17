@@ -149,24 +149,38 @@ async function createCustomer(input: AppmaxCreatePaymentInput): Promise<number> 
   return data.data.customer.id;
 }
 
+/** Remove o prefixo `data:image/...;base64,` se vier incluso (ver nota no Pix abaixo). */
+export function stripDataUriPrefix(value: string | undefined): string | undefined {
+  if (!value) return value;
+  const match = value.match(/^data:[^;]+;base64,(.*)$/s);
+  return match ? match[1] : value;
+}
+
 /**
  * Cria o pedido + pagamento na Appmax.
  *
- * Fluxo real (confirmado em docs.appmax.com.br, 2026-09-12): criar cliente
- * -> criar pedido vinculado ao customer_id -> efetuar pagamento vinculado
- * ao order_id. Cartão de crédito ainda não teve o endpoint/payload exatos
- * confirmados contra a documentação — revisar antes de habilitar em produção.
+ * Fluxo e formatos de request/response confirmados ao pé da letra contra
+ * docs.appmax.com.br/guides/exemplo-integracao (Novembro/2026): criar
+ * cliente -> criar pedido vinculado ao customer_id -> efetuar pagamento
+ * vinculado ao order_id + customer_id. Valores sempre em centavos.
+ *
+ * Esta função substituiu uma versão anterior com dois bugs reais
+ * confirmados contra esse exemplo:
+ * 1. Pix: a resposta real vem em `data.pix.{qr_code, emv_code, expires_at}`,
+ *    não em `data.payment.{pix_qrcode, pix_emv, ...}` — o QR Code e o
+ *    código copia-e-cola nunca apareciam pro cliente.
+ * 2. Cartão: a chamada exigia `customer_id`, `holder_document_number` e
+ *    `holder_name` no payload (ausentes antes) e o status pós-pagamento
+ *    vem em `data.order.status` da própria resposta do pagamento, não em
+ *    `data.payment.status` (que não existe) nem no status pré-pagamento.
  */
 export async function createPayment(input: AppmaxCreatePaymentInput): Promise<AppmaxCreatePaymentResult> {
   const customerId = await createCustomer(input);
-
-  const productsValue = input.items.reduce((sum, i) => sum + i.unitPriceCents * i.quantity, 0);
 
   const order = await appmaxFetch<{ data: { order: { id: number; status: string } } }>('/v1/orders', {
     method: 'POST',
     body: JSON.stringify({
       customer_id: customerId,
-      products_value: productsValue,
       discount_value: input.discountCents ?? 0,
       shipping_value: input.shippingCents ?? 0,
       products: input.items.map((item) => ({
@@ -183,7 +197,7 @@ export async function createPayment(input: AppmaxCreatePaymentInput): Promise<Ap
 
   if (input.method === 'pix') {
     const payment = await appmaxFetch<{
-      data: { payment: { pix_qrcode?: string; pix_emv?: string; pix_expiration_date?: string } };
+      data: { order: { id: number; status: string }; pix?: { qr_code?: string; emv_code?: string; expires_at?: string } };
     }>('/v1/payments/pix', {
       method: 'POST',
       body: JSON.stringify({
@@ -195,42 +209,41 @@ export async function createPayment(input: AppmaxCreatePaymentInput): Promise<Ap
     return {
       providerOrderId: String(orderId),
       transactionId: String(orderId),
-      status: mapPaymentStatus(order.data.order.status),
-      pix: payment.data.payment.pix_emv
+      status: mapPaymentStatus(payment.data.order.status),
+      pix: payment.data.pix?.emv_code
         ? {
-            qrCode: payment.data.payment.pix_emv,
-            qrCodeBase64: payment.data.payment.pix_qrcode,
-            expiresAt: payment.data.payment.pix_expiration_date,
+            qrCode: payment.data.pix.emv_code,
+            qrCodeBase64: stripDataUriPrefix(payment.data.pix.qr_code),
+            expiresAt: payment.data.pix.expires_at,
           }
         : undefined,
-      raw: { order: order.data.order, payment: payment.data.payment },
+      raw: { order: order.data.order, payment: payment.data },
     };
   }
 
-  // Cartão de crédito: endpoint/payload ainda não confirmados contra a
-  // documentação oficial (ver comentário acima). Mantido como melhor esforço.
-  const payment = await appmaxFetch<{ data: { payment: { id?: number; status?: string } } }>(
-    '/v1/payments/credit-card',
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        order_id: orderId,
-        payment_data: {
-          credit_card: {
-            token: input.cardToken,
-            installments: input.installments ?? 1,
-            soft_descriptor: input.softDescriptor ?? 'DROPBR',
-          },
+  const { first_name, last_name } = splitName(input.customer.name);
+  const payment = await appmaxFetch<{ data: { order: { id: number; status: string } } }>('/v1/payments/credit-card', {
+    method: 'POST',
+    body: JSON.stringify({
+      order_id: orderId,
+      customer_id: customerId,
+      payment_data: {
+        credit_card: {
+          token: input.cardToken,
+          holder_document_number: input.customer.document,
+          holder_name: `${first_name} ${last_name}`,
+          installments: input.installments ?? 1,
+          soft_descriptor: input.softDescriptor ?? 'FAZZO',
         },
-      }),
-    },
-  );
+      },
+    }),
+  });
 
   return {
     providerOrderId: String(orderId),
-    transactionId: String(payment.data.payment.id ?? orderId),
-    status: mapPaymentStatus(payment.data.payment.status ?? order.data.order.status),
-    raw: { order: order.data.order, payment: payment.data.payment },
+    transactionId: String(orderId),
+    status: mapPaymentStatus(payment.data.order.status),
+    raw: { order: order.data.order, payment: payment.data },
   };
 }
 
