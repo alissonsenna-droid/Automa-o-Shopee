@@ -310,44 +310,47 @@ export function CheckoutForm({ sessionId }: { sessionId: string }) {
             </div>
           </div>
 
-          {/* Form de tokenização do Appmax JS — sempre montado (nunca atrás
-              de um `{condicional && ...}`), só escondido por CSS quando Pix
-              está selecionado. Os `name` são fixos pelo contrato do SDK;
-              não renomear (ver docs.appmax.com.br/guides/appmax-js). */}
-          <form
-            ref={cardFormRef}
-            data-appmax-checkout
-            method="POST"
-            onSubmit={(e) => e.preventDefault()}
-            className={paymentMethod === 'credit_card' ? 'space-y-3 rounded-md border border-border p-3' : 'hidden'}
-          >
-            <div>
-              <Label htmlFor="card-number">Número do cartão</Label>
-              <Input id="card-number" name="card-number" inputMode="numeric" autoComplete="cc-number" required={paymentMethod === 'credit_card'} />
-            </div>
-            <div>
-              <Label htmlFor="card-holder-name">Nome impresso no cartão</Label>
-              <Input
-                id="card-holder-name"
-                name="card-holder-name"
-                autoComplete="cc-name"
-                value={cardHolderName}
-                onChange={(e) => setCardHolderName(e.target.value)}
-                required={paymentMethod === 'credit_card'}
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <Input name="exp-month" placeholder="MM" inputMode="numeric" autoComplete="cc-exp-month" required={paymentMethod === 'credit_card'} />
-              <Input name="exp-year" placeholder="AAAA" inputMode="numeric" autoComplete="cc-exp-year" required={paymentMethod === 'credit_card'} />
-              <Input name="cvv" placeholder="CVV" inputMode="numeric" autoComplete="cc-csc" required={paymentMethod === 'credit_card'} />
-            </div>
-          </form>
-
           {serverError && <p className="text-sm text-destructive">{serverError}</p>}
 
           <Button type="submit" className="w-full" disabled={submitting}>
             {submitting ? 'Processando...' : 'Finalizar compra'}
           </Button>
+        </form>
+
+        {/* Form de tokenização do Appmax JS — IRMÃO do form principal, nunca
+            aninhado dentro dele (HTML não permite <form> dentro de <form>;
+            fazer isso quebra a hidratação do React, que não sabe que o
+            browser corrige a aninhação por baixo dele). Sempre montado
+            (nunca atrás de um `{condicional && ...}`), só escondido por CSS
+            quando Pix está selecionado. Os `name` são fixos pelo contrato
+            do SDK; não renomear (ver docs.appmax.com.br/guides/appmax-js). */}
+        <form
+          ref={cardFormRef}
+          data-appmax-checkout
+          method="POST"
+          onSubmit={(e) => e.preventDefault()}
+          className={paymentMethod === 'credit_card' ? 'mt-4 space-y-3 rounded-md border border-border p-3' : 'hidden'}
+        >
+          <div>
+            <Label htmlFor="card-number">Número do cartão</Label>
+            <Input id="card-number" name="card-number" inputMode="numeric" autoComplete="cc-number" required={paymentMethod === 'credit_card'} />
+          </div>
+          <div>
+            <Label htmlFor="card-holder-name">Nome impresso no cartão</Label>
+            <Input
+              id="card-holder-name"
+              name="card-holder-name"
+              autoComplete="cc-name"
+              value={cardHolderName}
+              onChange={(e) => setCardHolderName(e.target.value)}
+              required={paymentMethod === 'credit_card'}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <Input name="exp-month" placeholder="MM" inputMode="numeric" autoComplete="cc-exp-month" required={paymentMethod === 'credit_card'} />
+            <Input name="exp-year" placeholder="AAAA" inputMode="numeric" autoComplete="cc-exp-year" required={paymentMethod === 'credit_card'} />
+            <Input name="cvv" placeholder="CVV" inputMode="numeric" autoComplete="cc-csc" required={paymentMethod === 'credit_card'} />
+          </div>
         </form>
       </CardContent>
     </Card>
