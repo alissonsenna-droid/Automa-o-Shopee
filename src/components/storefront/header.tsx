@@ -25,8 +25,12 @@ export function StorefrontHeader() {
               Buscar
             </button>
           </form>
-          <Link href="/minha-conta" className="hidden shrink-0 text-sm font-medium sm:block">
-            Minha conta
+          {/* Não existe sistema de conta de cliente (login) — "/minha-conta"
+              era um link morto. Aponta pra consulta pública de pedidos, que
+              cumpre a mesma necessidade (acompanhar uma compra) sem precisar
+              de autenticação. */}
+          <Link href="/pedido" className="hidden shrink-0 text-sm font-medium sm:block">
+            Meus pedidos
           </Link>
         </div>
         <nav className="flex items-center gap-4 overflow-x-auto text-sm font-medium">

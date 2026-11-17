@@ -31,10 +31,13 @@ export function StorefrontFooter() {
           </ul>
         </div>
         <div>
-          <h3 className="mb-3 font-heading font-bold text-foreground">Fazzo</h3>
-          <p className="text-muted-foreground">Plataforma em desenvolvimento.</p>
+          <h3 className="mb-3 font-heading font-bold text-foreground">Contato</h3>
+          <p className="text-muted-foreground">@fazzo.br</p>
         </div>
       </div>
+      <p className="border-t border-border px-4 py-4 text-center text-xs text-muted-foreground">
+        © {new Date().getFullYear()} Fazzo. Todos os direitos reservados.
+      </p>
     </footer>
   );
 }
