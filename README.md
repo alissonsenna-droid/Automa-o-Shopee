@@ -82,11 +82,15 @@ scripts/seed.ts   # seed alternativo via API (projetos hospedados)
 
 ## Configurando a Appmax
 
-1. Crie uma aplicação em https://docs.appmax.com.br (ambiente sandbox).
-2. Preencha `APPMAX_API_KEY`, `APPMAX_SECRET`, `APPMAX_WEBHOOK_SECRET` no
-   `.env`. Mantenha `APPMAX_ENVIRONMENT=sandbox` até validar tudo.
-3. Configure o apphook/webhook da Appmax apontando para:
-   `https://SEU_DOMINIO/api/webhooks/appmax`
+1. No painel da sua loja na Appmax, vá em **API → Credenciais** e clique em
+   "Gerar credenciais" (gera um Client ID + Client Secret pra essa loja —
+   não precisa de nenhum app/instalação separado).
+2. Preencha `APPMAX_CLIENT_ID` e `APPMAX_CLIENT_SECRET` no `.env`. Mantenha
+   `APPMAX_ENVIRONMENT=sandbox` até validar tudo.
+3. Em **API → Webhooks**, cadastre um webhook pra essa loja apontando para:
+   `https://SEU_DOMINIO/api/webhooks/appmax` (eventos de pedido/pagamento).
+   A Appmax não envia assinatura nesse POST — o endpoint reconfere o status
+   direto na API autenticada antes de confiar em qualquer payload recebido.
 4. **Nunca** coloque essas credenciais no código — só via variáveis de
    ambiente (Vercel → Project Settings → Environment Variables).
 

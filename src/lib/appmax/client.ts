@@ -1,5 +1,4 @@
 import 'server-only';
-import crypto from 'node:crypto';
 import { AppmaxError, type AppmaxCreatePaymentInput, type AppmaxCreatePaymentResult } from './types';
 import { mapPaymentStatus } from './mapStatus';
 
@@ -240,25 +239,4 @@ export async function getPayment(transactionId: string): Promise<{ status: strin
     method: 'GET',
   });
   return { status: data.data.order.status, raw: data };
-}
-
-/**
- * Valida a assinatura HMAC de um webhook da Appmax usando
- * APPMAX_WEBHOOK_SECRET. Ajuste o algoritmo/header conforme a documentação
- * de "apphooks" da sua conta caso ela use um esquema diferente.
- */
-export function validateWebhookSignature(rawBody: string, signatureHeader: string | null): boolean {
-  const secret = process.env.APPMAX_WEBHOOK_SECRET;
-  if (!secret) {
-    throw new AppmaxError('APPMAX_WEBHOOK_SECRET não configurado.');
-  }
-  if (!signatureHeader) return false;
-
-  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-
-  try {
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signatureHeader));
-  } catch {
-    return false;
-  }
 }

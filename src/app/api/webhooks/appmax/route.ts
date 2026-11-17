@@ -1,33 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
-import { parseAppmaxWebhook, validateWebhookSignature, orderStatusFromPaymentStatus } from '@/lib/appmax';
+import { parseAppmaxWebhook, getPayment, mapPaymentStatus, orderStatusFromPaymentStatus } from '@/lib/appmax';
 import { selectBestSupplier } from '@/lib/suppliers';
 import { logAudit } from '@/lib/audit';
 
 /**
  * POST /api/webhooks/appmax
  *
- * Fluxo: valida assinatura -> identifica evento -> verifica idempotência
- * (unique constraint em webhook_events(provider, event_id)) -> localiza o
- * pagamento pelo transaction_id -> atualiza payment + order -> se aprovado,
- * cria a supplier_order (fornecedor é sempre acionado via
- * ManualSupplierProvider por padrão, sem automação de compra de terceiros).
+ * A Appmax não envia header de assinatura (HMAC) nem token nos webhooks —
+ * confirmado em docs.appmax.com.br/guides/webhooks.md ("Headers HTTP" e
+ * "Boas Práticas" #7): a orientação oficial é validar a origem de outra
+ * forma, inclusive "confirmar o evento via API da Appmax". É isso que
+ * fazemos aqui: o `status` do payload é só um aviso de "foi dando chegue
+ * uma olhada" — antes de mudar qualquer coisa no banco, buscamos o status
+ * real do pedido direto na API autenticada da Appmax (getPayment) e usamos
+ * só esse valor confirmado. Isso também cobre a recomendação #4 (não
+ * confiar na ordem dos eventos: sempre reconferir o estado atual).
+ *
+ * Fluxo: identifica evento -> verifica idempotência (unique constraint em
+ * webhook_events(provider, event_id)) -> localiza o pagamento pelo
+ * transaction_id -> confirma o status real na Appmax -> atualiza payment +
+ * order -> se aprovado, cria a supplier_order (fornecedor é sempre
+ * acionado via ManualSupplierProvider por padrão, sem automação de compra
+ * de terceiros).
  */
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   const supabase = createSupabaseAdminClient();
-
-  let signatureValid: boolean;
-  try {
-    signatureValid = validateWebhookSignature(rawBody, request.headers.get('x-appmax-signature'));
-  } catch (error) {
-    console.error('Webhook Appmax: erro ao validar assinatura', error);
-    return NextResponse.json({ error: 'Configuração de webhook inválida.' }, { status: 500 });
-  }
-
-  if (!signatureValid) {
-    return NextResponse.json({ error: 'Assinatura inválida.' }, { status: 401 });
-  }
 
   const payload = JSON.parse(rawBody) as Record<string, unknown>;
   const event = parseAppmaxWebhook(payload);
@@ -63,27 +62,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true, warning: 'payment_not_found' }, { status: 200 });
     }
 
+    // Não confiamos no `status` do payload (sem assinatura, qualquer um
+    // poderia enviar um POST forjado) — reconferimos direto na Appmax.
+    const confirmed = await getPayment(event.transactionId);
+    const confirmedStatus = mapPaymentStatus(confirmed.status);
+
     await supabase
       .from('payments')
-      .update({ status: event.status, paid_at: event.status === 'pagamento_aprovado' ? new Date().toISOString() : null })
+      .update({ status: confirmedStatus, paid_at: confirmedStatus === 'pagamento_aprovado' ? new Date().toISOString() : null })
       .eq('id', payment.id);
 
-    const newOrderStatus = orderStatusFromPaymentStatus(event.status);
+    const newOrderStatus = orderStatusFromPaymentStatus(confirmedStatus);
     const order = payment.orders as { id: string; status: string };
 
     if (newOrderStatus) {
       await supabase
         .from('orders')
-        .update({ payment_status: event.status, status: newOrderStatus === 'paid' ? 'paid' : newOrderStatus })
+        .update({ payment_status: confirmedStatus, status: newOrderStatus === 'paid' ? 'paid' : newOrderStatus })
         .eq('id', order.id);
     }
 
-    if (event.status === 'pagamento_aprovado') {
+    if (confirmedStatus === 'pagamento_aprovado') {
       await createSupplierOrderForPaidOrder(supabase, order.id);
     }
 
     await markWebhookProcessed(supabase, event.eventId);
-    await logAudit({ action: 'webhook.appmax.processed', entity: 'orders', entityId: order.id, metadata: { eventType: event.eventType, status: event.status } });
+    await logAudit({
+      action: 'webhook.appmax.processed',
+      entity: 'orders',
+      entityId: order.id,
+      metadata: { eventType: event.eventType, payloadStatus: event.status, confirmedStatus },
+    });
 
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (error) {
