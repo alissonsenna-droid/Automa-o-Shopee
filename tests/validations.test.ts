@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createCheckoutSessionSchema, submitCheckoutSchema } from '@/lib/validations/checkout';
 import { duplicateOfferSchema } from '@/lib/validations/offers';
+import { updateOrderSchema } from '@/lib/validations/orders';
 
 describe('createCheckoutSessionSchema', () => {
   it('exige offer_id ou offer_slug', () => {
@@ -43,5 +44,23 @@ describe('duplicateOfferSchema', () => {
   it('exige nome e slug válidos', () => {
     expect(duplicateOfferSchema.safeParse({ name: 'Oferta X', slug: 'Slug Invalido' }).success).toBe(false);
     expect(duplicateOfferSchema.safeParse({ name: 'Oferta X', slug: 'slug-valido' }).success).toBe(true);
+  });
+});
+
+describe('updateOrderSchema', () => {
+  it('aceita só status', () => {
+    expect(updateOrderSchema.safeParse({ status: 'cancelled' }).success).toBe(true);
+  });
+
+  it('aceita só notas', () => {
+    expect(updateOrderSchema.safeParse({ notes: 'cliente pediu cancelamento' }).success).toBe(true);
+  });
+
+  it('rejeita status inválido', () => {
+    expect(updateOrderSchema.safeParse({ status: 'foo' }).success).toBe(false);
+  });
+
+  it('aceita objeto vazio (nenhum campo obrigatório)', () => {
+    expect(updateOrderSchema.safeParse({}).success).toBe(true);
   });
 });

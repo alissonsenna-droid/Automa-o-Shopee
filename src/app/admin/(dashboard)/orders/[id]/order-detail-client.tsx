@@ -26,14 +26,44 @@ export function OrderDetailClient({ order }: Props) {
   const [sending, setSending] = useState(false);
   const [tracking, setTracking] = useState({ carrier: '', tracking_code: '', tracking_url: '' });
   const [savingTracking, setSavingTracking] = useState(false);
+  const [notes, setNotes] = useState(order.notes ?? '');
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const profit = calculateOrderProfit(order);
+  const isFinalized = order.status === 'cancelled' || order.status === 'refunded';
 
   async function sendToSupplier() {
     if (!supplierOrder) return;
     setSending(true);
     await fetch(`/api/supplier-orders/${supplierOrder.id}/confirm-purchase`, { method: 'POST' });
     setSending(false);
+    router.refresh();
+  }
+
+  async function updateStatus(status: 'cancelled' | 'refunded') {
+    const label = status === 'cancelled' ? 'cancelar' : 'marcar como reembolsado';
+    if (!window.confirm(`Tem certeza que quer ${label} o pedido ${order.order_number}? Essa ação é manual e não desfaz nenhum pagamento de verdade — só atualiza o status aqui no sistema.`)) {
+      return;
+    }
+    setUpdatingStatus(true);
+    await fetch(`/api/orders/${order.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    setUpdatingStatus(false);
+    router.refresh();
+  }
+
+  async function saveNotes() {
+    setSavingNotes(true);
+    await fetch(`/api/orders/${order.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes }),
+    });
+    setSavingNotes(false);
     router.refresh();
   }
 
@@ -52,12 +82,24 @@ export function OrderDetailClient({ order }: Props) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">Pedido {order.order_number}</h1>
-        <div className="mt-1 flex gap-2">
-          <Badge>{order.status}</Badge>
-          <Badge variant="muted">{order.payment_status}</Badge>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">Pedido {order.order_number}</h1>
+          <div className="mt-1 flex gap-2">
+            <Badge>{order.status}</Badge>
+            <Badge variant="muted">{order.payment_status}</Badge>
+          </div>
         </div>
+        {!isFinalized && (
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => updateStatus('refunded')} disabled={updatingStatus}>
+              Marcar como reembolsado
+            </Button>
+            <Button size="sm" variant="destructive" onClick={() => updateStatus('cancelled')} disabled={updatingStatus}>
+              Cancelar pedido
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -141,6 +183,24 @@ export function OrderDetailClient({ order }: Props) {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Anotações internas</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Visível só pro time, nunca pro cliente..."
+            rows={3}
+            className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          />
+          <Button size="sm" variant="outline" onClick={saveNotes} disabled={savingNotes}>
+            {savingNotes ? 'Salvando...' : 'Salvar anotação'}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
