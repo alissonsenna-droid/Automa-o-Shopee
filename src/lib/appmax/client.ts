@@ -2,7 +2,6 @@ import 'server-only';
 import crypto from 'node:crypto';
 import { AppmaxError, type AppmaxCreatePaymentInput, type AppmaxCreatePaymentResult } from './types';
 import { mapPaymentStatus } from './mapStatus';
-import { getMerchantCredentials } from './install';
 
 // Confirmado contra a documentação oficial (docs.appmax.com.br) em 2026-09-12:
 // - Autenticação: domínio SEPARADO (auth.appmax.com.br), form-urlencoded.
@@ -20,16 +19,25 @@ function getApiBaseUrl(): string {
   return isProduction() ? PRODUCTION_API_BASE_URL : SANDBOX_API_BASE_URL;
 }
 
-async function getCredentials() {
-  // As chamadas transacionais (/v1/*) exigem credenciais de MERCHANT, não
-  // as credenciais do app (APPMAX_API_KEY/SECRET) — ver src/lib/appmax/install.ts.
-  const merchant = await getMerchantCredentials();
-  if (!merchant) {
-    throw new AppmaxError(
-      'App ainda não instalado/autorizado na Appmax (sem credenciais de merchant). Acesse /api/setup/appmax/start para concluir a instalação.',
-    );
+/**
+ * Client ID e Client Secret gerados direto no painel da própria loja na
+ * Appmax (Configurações → API → Credenciais → "Gerar credenciais").
+ *
+ * Confirmado contra a aba "Guia para IA" do painel Appmax (Novembro/2026):
+ * é OAuth 2.0 client_credentials com um único par de credenciais por loja,
+ * lido de variável de ambiente — não existe fluxo de "autorizar app" via
+ * redirecionamento para este tipo de integração (esse fluxo mais complexo,
+ * em src/lib/appmax/install.ts, é de um modelo de App Store/multi-merchant
+ * que não se aplica aqui; mantido no código para referência futura, mas
+ * não é o caminho usado por este cliente transacional).
+ */
+function getCredentials(): { apiKey: string; secret: string } {
+  const apiKey = process.env.APPMAX_CLIENT_ID;
+  const secret = process.env.APPMAX_CLIENT_SECRET;
+  if (!apiKey || !secret) {
+    throw new AppmaxError('APPMAX_CLIENT_ID / APPMAX_CLIENT_SECRET não configurados (gere em Appmax → API → Credenciais).');
   }
-  return { apiKey: merchant.clientId, secret: merchant.clientSecret };
+  return { apiKey, secret };
 }
 
 // Token OAuth2 fica em cache no processo (server) para evitar autenticar a
@@ -42,7 +50,7 @@ async function getAccessToken(): Promise<string> {
     return cachedToken.value;
   }
 
-  const { apiKey, secret } = await getCredentials();
+  const { apiKey, secret } = getCredentials();
 
   // A autenticação é sempre no domínio auth.appmax.com.br (não no domínio
   // da API), e o corpo é x-www-form-urlencoded — não JSON.

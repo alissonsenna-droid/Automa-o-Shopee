@@ -3,14 +3,21 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { AppmaxError } from './types';
 
 /**
- * Fluxo de instalação/autorização do app na Appmax (ver docs.appmax.com.br/guides/instalacao).
+ * Fluxo de instalação/autorização de App Store da Appmax (ver
+ * docs.appmax.com.br/guides/instalacao) — modelo de app multi-merchant,
+ * onde um app registrado uma vez é autorizado por vários lojistas
+ * diferentes, cada um gerando suas próprias credenciais de merchant.
  *
- * As credenciais em APPMAX_API_KEY/APPMAX_SECRET são as credenciais do APP
- * (só servem para POST /app/authorize e POST /app/client/generate). As
- * chamadas transacionais (/v1/customers, /v1/orders, /v1/payments/*)
- * exigem credenciais de MERCHANT, geradas ao final deste fluxo e
- * armazenadas na tabela app_settings — nunca em variável de ambiente,
- * porque são geradas em runtime pelo próprio servidor.
+ * NÃO É o fluxo usado hoje pelo cliente transacional (src/lib/appmax/client.ts):
+ * confirmado na aba "Guia para IA" do painel Appmax (Novembro/2026) que, pra
+ * uma loja única como a Fazzo, a Appmax já oferece Client ID/Secret direto
+ * em Configurações → API → Credenciais, sem precisar de app registrado nem
+ * redirecionamento de autorização. Esse arquivo fica aqui só como referência,
+ * caso um dia este sistema vire um app distribuído para múltiplas lojas.
+ *
+ * As credenciais em APPMAX_API_KEY/APPMAX_SECRET (deste fluxo, diferentes de
+ * APPMAX_CLIENT_ID/APPMAX_CLIENT_SECRET usadas pelo client.ts) só servem para
+ * POST /app/authorize e POST /app/client/generate.
  */
 
 const AUTH_BASE_URL = 'https://auth.appmax.com.br';
