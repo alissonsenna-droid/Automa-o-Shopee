@@ -52,7 +52,8 @@ export default async function AdminDashboardPage() {
     { href: '/admin/pix', label: 'PAGAR PEDIDOS' },
     { href: '/admin/orders', label: 'VER PEDIDOS' },
     { href: '/admin/actions', label: 'VER PROBLEMAS' },
-    { href: '/admin/analytics/products', label: 'RELATÓRIOS' },
+    { href: '/admin/financeiro', label: 'FINANCEIRO' },
+    { href: '/admin/analytics/products', label: 'TESTE DE PRODUTOS' },
   ];
 
   return (

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateOrderProfit, calculateOfferProfit, calculateProductProfit } from '@/lib/financial';
+import { calculateOrderProfit, calculateOfferProfit, calculateProductProfit, groupProfitByDay } from '@/lib/financial';
 
 describe('calculateOrderProfit', () => {
   it('calcula lucro simples corretamente', () => {
@@ -43,5 +43,31 @@ describe('calculateOfferProfit / calculateProductProfit', () => {
     const result = calculateOfferProfit({ orders });
     expect(result.cpa).toBeNull();
     expect(result.roi).toBeNull();
+  });
+});
+
+describe('groupProfitByDay', () => {
+  const day1Order1 = { total: 100, supplier_cost: 40, gateway_fee: 5, other_costs: 0, discount: 0, status: 'paid' as const, created_at: '2026-11-01T10:00:00Z' };
+  const day1Order2 = { total: 50, supplier_cost: 20, gateway_fee: 2, other_costs: 0, discount: 0, status: 'delivered' as const, created_at: '2026-11-01T18:00:00Z' };
+  const day2Order1 = { total: 200, supplier_cost: 80, gateway_fee: 10, other_costs: 0, discount: 0, status: 'paid' as const, created_at: '2026-11-02T09:00:00Z' };
+  const day2Cancelled = { total: 999, supplier_cost: 0, gateway_fee: 0, other_costs: 0, discount: 0, status: 'cancelled' as const, created_at: '2026-11-02T09:00:00Z' };
+  const orders = [day1Order1, day1Order2, day2Order1, day2Cancelled];
+
+  it('agrupa por dia, soma receita/custo/lucro e ignora cancelados', () => {
+    const rows = groupProfitByDay(orders);
+    expect(rows).toHaveLength(2);
+
+    expect(rows[0]).toMatchObject({ date: '2026-11-01', ordersCount: 2, revenue: 150, cost: 67, profit: 83 });
+    expect(rows[1]).toMatchObject({ date: '2026-11-02', ordersCount: 1, revenue: 200, cost: 90, profit: 110 });
+  });
+
+  it('ordena por data crescente', () => {
+    const shuffled = [day2Order1, day1Order1, day1Order2];
+    const rows = groupProfitByDay(shuffled);
+    expect(rows.map((r) => r.date)).toEqual(['2026-11-01', '2026-11-02']);
+  });
+
+  it('retorna lista vazia sem pedidos', () => {
+    expect(groupProfitByDay([])).toEqual([]);
   });
 });

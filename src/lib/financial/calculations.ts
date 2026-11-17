@@ -94,3 +94,46 @@ export function calculateOfferProfit(input: AggregateProfitInput): AggregateProf
 export function calculateProductProfit(input: AggregateProfitInput): AggregateProfitResult {
   return aggregate(input.orders, input.totalAdSpend);
 }
+
+/** Agrega lucro/ROI/CPA de um conjunto arbitrário de pedidos (relatório por período). */
+export function calculatePeriodProfit(input: AggregateProfitInput): AggregateProfitResult {
+  return aggregate(input.orders, input.totalAdSpend);
+}
+
+export interface DailyProfitRow {
+  date: string; // YYYY-MM-DD
+  ordersCount: number;
+  revenue: number;
+  cost: number;
+  profit: number;
+  margin: number;
+}
+
+/**
+ * Agrupa o lucro por dia (fuso do `created_at`, que já vem em UTC do banco),
+ * pra montar o relatório diário do Financeiro. Mesma regra de exclusão de
+ * pedidos cancelados usada em `aggregate`.
+ */
+export function groupProfitByDay(
+  orders: Array<
+    Pick<Order, 'total' | 'supplier_cost' | 'gateway_fee' | 'other_costs' | 'discount' | 'status' | 'created_at'>
+  >,
+): DailyProfitRow[] {
+  const relevant = orders.filter((o) => o.status !== 'cancelled');
+  const byDate = new Map<string, { ordersCount: number; revenue: number; cost: number; profit: number }>();
+
+  for (const order of relevant) {
+    const date = order.created_at.slice(0, 10);
+    const b = calculateOrderProfit(order);
+    const entry = byDate.get(date) ?? { ordersCount: 0, revenue: 0, cost: 0, profit: 0 };
+    entry.ordersCount += 1;
+    entry.revenue += b.revenue;
+    entry.cost += b.supplierCost + b.gatewayFee + b.otherCosts;
+    entry.profit += b.profit;
+    byDate.set(date, entry);
+  }
+
+  return Array.from(byDate.entries())
+    .map(([date, v]) => ({ ...v, date, margin: v.revenue > 0 ? v.profit / v.revenue : 0 }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
