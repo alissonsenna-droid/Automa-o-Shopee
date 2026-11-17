@@ -32,7 +32,7 @@ export function OrderDetailClient({ order }: Props) {
   async function sendToSupplier() {
     if (!supplierOrder) return;
     setSending(true);
-    await fetch(`/api/supplier-orders/${supplierOrder.id}/send`, { method: 'POST' });
+    await fetch(`/api/supplier-orders/${supplierOrder.id}/confirm-purchase`, { method: 'POST' });
     setSending(false);
     router.refresh();
   }
@@ -113,7 +113,7 @@ export function OrderDetailClient({ order }: Props) {
               <Badge variant={supplierOrder.status === 'pending' ? 'warning' : 'success'}>{supplierOrder.status}</Badge>
               {supplierOrder.status === 'pending' && (
                 <Button size="sm" onClick={sendToSupplier} disabled={sending}>
-                  {sending ? 'Enviando...' : 'Enviar ao fornecedor'}
+                  {sending ? 'Salvando...' : 'Marcar como comprado'}
                 </Button>
               )}
             </div>

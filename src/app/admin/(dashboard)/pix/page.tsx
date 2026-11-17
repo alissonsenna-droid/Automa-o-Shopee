@@ -61,7 +61,7 @@ export default function PixCentralPage() {
 
   async function markAsBought(id: string) {
     setActingId(id);
-    await fetch(`/api/supplier-orders/${id}/send`, { method: 'POST' });
+    await fetch(`/api/supplier-orders/${id}/confirm-purchase`, { method: 'POST' });
     setActingId(null);
     load();
   }
