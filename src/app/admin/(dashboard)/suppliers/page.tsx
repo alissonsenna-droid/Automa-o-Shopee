@@ -23,6 +23,7 @@ export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function load() {
@@ -35,23 +36,47 @@ export default function SuppliersPage() {
     load();
   }, []);
 
-  async function createSupplier(e: React.FormEvent) {
+  function startCreate() {
+    setEditingId(null);
+    setForm(emptyForm);
+    setShowForm(true);
+  }
+
+  function startEdit(supplier: Supplier) {
+    setEditingId(supplier.id);
+    setForm({
+      name: supplier.name,
+      email: supplier.email ?? '',
+      phone: supplier.phone ?? '',
+      platform: supplier.platform,
+      notes: supplier.notes ?? '',
+    });
+    setShowForm(true);
+  }
+
+  function cancelForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm);
+  }
+
+  async function saveSupplier(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    await fetch('/api/suppliers', {
-      method: 'POST',
+    const body = {
+      name: form.name,
+      email: form.email || undefined,
+      phone: form.phone || undefined,
+      platform: form.platform,
+      notes: form.notes || undefined,
+    };
+    await fetch(editingId ? `/api/suppliers/${editingId}` : '/api/suppliers', {
+      method: editingId ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: form.name,
-        email: form.email || undefined,
-        phone: form.phone || undefined,
-        platform: form.platform,
-        notes: form.notes || undefined,
-      }),
+      body: JSON.stringify(body),
     });
     setSaving(false);
-    setShowForm(false);
-    setForm(emptyForm);
+    cancelForm();
     load();
   }
 
@@ -68,16 +93,16 @@ export default function SuppliersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Fornecedores</h1>
-        <Button onClick={() => setShowForm((v) => !v)}>{showForm ? 'Cancelar' : 'Novo fornecedor'}</Button>
+        <Button onClick={() => (showForm ? cancelForm() : startCreate())}>{showForm ? 'Cancelar' : 'Novo fornecedor'}</Button>
       </div>
 
       {showForm && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Novo fornecedor</CardTitle>
+            <CardTitle className="text-base">{editingId ? 'Editar fornecedor' : 'Novo fornecedor'}</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={createSupplier} className="grid grid-cols-2 gap-4">
+            <form onSubmit={saveSupplier} className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Nome</Label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
@@ -110,7 +135,7 @@ export default function SuppliersPage() {
               </div>
               <div className="col-span-2">
                 <Button type="submit" disabled={saving}>
-                  {saving ? 'Salvando...' : 'Criar fornecedor'}
+                  {saving ? 'Salvando...' : editingId ? 'Salvar alterações' : 'Criar fornecedor'}
                 </Button>
               </div>
             </form>
@@ -142,7 +167,10 @@ export default function SuppliersPage() {
                     <TableCell>
                       <Badge variant={s.status === 'active' ? 'success' : 'muted'}>{s.status === 'active' ? 'Ativo' : 'Inativo'}</Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="space-x-2">
+                      <Button variant="outline" size="sm" onClick={() => startEdit(s)}>
+                        Editar
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => toggleStatus(s)}>
                         {s.status === 'active' ? 'Desativar' : 'Ativar'}
                       </Button>
@@ -155,7 +183,7 @@ export default function SuppliersPage() {
         </CardContent>
       </Card>
       <p className="text-xs text-muted-foreground">
-        Vincular um fornecedor a um produto específico (custo, estoque, SKU) ainda não tem tela própria — depende de uma API dedicada que ainda não existe.
+        Pra vincular um fornecedor a um produto (custo, estoque, SKU), vá em <span className="font-medium">Produtos → Fornecedores</span> na linha do produto.
       </p>
     </div>
   );
