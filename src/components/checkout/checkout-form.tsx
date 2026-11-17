@@ -46,11 +46,8 @@ export function CheckoutForm({ sessionId }: { sessionId: string }) {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(formSchema), defaultValues: { payment_method: 'pix' } });
-
-  const paymentMethod = watch('payment_method');
 
   async function onSubmit(values: FormValues) {
     setSubmitting(true);
@@ -233,20 +230,13 @@ export function CheckoutForm({ sessionId }: { sessionId: string }) {
             <Label>Pagamento</Label>
             <div className="flex gap-3">
               <label className="flex items-center gap-2 text-sm">
-                <input type="radio" value="pix" {...register('payment_method')} /> Pix
+                <input type="radio" value="pix" checked readOnly /> Pix
               </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="radio" value="credit_card" {...register('payment_method')} /> Cartão
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <input type="radio" value="credit_card" disabled /> Cartão (em breve)
               </label>
             </div>
           </div>
-
-          {paymentMethod === 'credit_card' && (
-            <p className="text-xs text-muted-foreground">
-              Em produção, o token do cartão é gerado no browser pelo SDK/JS da Appmax (tokenização), nunca
-              enviamos o número do cartão para o nosso backend.
-            </p>
-          )}
 
           {serverError && <p className="text-sm text-destructive">{serverError}</p>}
 
