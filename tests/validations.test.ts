@@ -38,6 +38,21 @@ describe('submitCheckoutSchema', () => {
     const result = submitCheckoutSchema.safeParse({ ...base, payment: { method: 'credit_card' } });
     expect(result.success).toBe(false);
   });
+
+  it('aceita customer_ip (coletado pelo Appmax JS) quando presente, mas é opcional', () => {
+    expect(submitCheckoutSchema.safeParse({ ...base, payment: { method: 'pix' } }).success).toBe(true);
+    const withIp = submitCheckoutSchema.safeParse({ ...base, customer_ip: '187.100.50.20', payment: { method: 'pix' } });
+    expect(withIp.success).toBe(true);
+    expect(withIp.success && withIp.data.customer_ip).toBe('187.100.50.20');
+  });
+
+  it('aceita cartão com card_token e installments válidos', () => {
+    const result = submitCheckoutSchema.safeParse({
+      ...base,
+      payment: { method: 'credit_card', card_token: 'tok_1234567890', installments: 3 },
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe('duplicateOfferSchema', () => {

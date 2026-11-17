@@ -148,7 +148,11 @@ export async function POST(request: NextRequest) {
     let paymentResult;
     try {
       const forwardedFor = request.headers.get('x-forwarded-for');
-      const customerIp = forwardedFor?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || undefined;
+      // Prefere o IP coletado pelo Appmax JS no browser (mais confiável pro
+      // antifraude); cai pro IP derivado de headers quando não vier (Pix
+      // ainda não usa o widget).
+      const customerIp =
+        input.customer_ip || forwardedFor?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || undefined;
 
       paymentResult = await createPayment({
         orderNumber,

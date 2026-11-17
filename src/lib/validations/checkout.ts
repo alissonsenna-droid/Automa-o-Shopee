@@ -31,6 +31,10 @@ const cepRegex = /^\d{8}$/;
 export const submitCheckoutSchema = z.object({
   session_id: z.string().uuid(),
   idempotency_key: z.string().min(8).max(128),
+  // IP coletado pelo Appmax JS no browser (ver src/lib/appmax-js) — mais
+  // confiável pro antifraude do que o IP derivado de headers no servidor.
+  // Opcional porque o Pix ainda não usa o widget.
+  customer_ip: z.string().max(45).optional(),
   customer: z.object({
     name: z.string().min(3).max(160),
     cpf: z.string().transform((v) => v.replace(/\D/g, '')).pipe(z.string().regex(cpfRegex, 'CPF inválido')),
