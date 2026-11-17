@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -39,7 +40,11 @@ export default function CustomersPage() {
               <TableBody>
                 {customers.map((c) => (
                   <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link href={`/admin/customers/${c.id}`} className="text-primary hover:underline">
+                        {c.name}
+                      </Link>
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{c.email}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{c.phone}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{new Date(c.created_at).toLocaleDateString('pt-BR')}</TableCell>
