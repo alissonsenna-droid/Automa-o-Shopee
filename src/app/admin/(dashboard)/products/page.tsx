@@ -18,6 +18,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
 
@@ -31,25 +32,66 @@ export default function ProductsPage() {
     load();
   }, []);
 
-  async function createProduct(e: React.FormEvent) {
+  function startCreate() {
+    setEditingId(null);
+    setForm(emptyForm);
+    setShowForm(true);
+  }
+
+  function startEdit(p: Product) {
+    setEditingId(p.id);
+    setForm({
+      name: p.name,
+      slug: p.slug,
+      sku: p.sku ?? '',
+      price: String(p.price),
+      compare_price: p.compare_price != null ? String(p.compare_price) : '',
+      cost_price: String(p.cost_price),
+      category: p.category,
+    });
+    setShowForm(true);
+  }
+
+  function cancelForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm);
+  }
+
+  async function saveProduct(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    await fetch('/api/products', {
-      method: 'POST',
+    const body = {
+      name: form.name,
+      slug: form.slug,
+      sku: form.sku || undefined,
+      price: Number(form.price),
+      compare_price: form.compare_price ? Number(form.compare_price) : undefined,
+      cost_price: Number(form.cost_price),
+      category: form.category || 'geral',
+    };
+    await fetch(editingId ? `/api/products/${editingId}` : '/api/products', {
+      method: editingId ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: form.name,
-        slug: form.slug,
-        sku: form.sku || undefined,
-        price: Number(form.price),
-        compare_price: form.compare_price ? Number(form.compare_price) : undefined,
-        cost_price: Number(form.cost_price),
-        category: form.category || 'geral',
-      }),
+      body: JSON.stringify(body),
     });
     setSaving(false);
-    setShowForm(false);
-    setForm(emptyForm);
+    cancelForm();
+    load();
+  }
+
+  async function toggleProductActive(p: Product) {
+    await fetch(`/api/products/${p.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: !p.active }),
+    });
+    load();
+  }
+
+  async function deleteProduct(p: Product) {
+    if (!window.confirm(`Excluir o produto "${p.name}"? Essa ação não pode ser desfeita.`)) return;
+    await fetch(`/api/products/${p.id}`, { method: 'DELETE' });
     load();
   }
 
@@ -57,16 +99,16 @@ export default function ProductsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Produtos</h1>
-        <Button onClick={() => setShowForm((v) => !v)}>{showForm ? 'Cancelar' : 'Novo produto'}</Button>
+        <Button onClick={() => (showForm ? cancelForm() : startCreate())}>{showForm ? 'Cancelar' : 'Novo produto'}</Button>
       </div>
 
       {showForm && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Novo produto</CardTitle>
+            <CardTitle className="text-base">{editingId ? 'Editar produto' : 'Novo produto'}</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={createProduct} className="grid grid-cols-2 gap-4">
+            <form onSubmit={saveProduct} className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Nome</Label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
@@ -97,7 +139,7 @@ export default function ProductsPage() {
               </div>
               <div className="col-span-2">
                 <Button type="submit" disabled={saving}>
-                  {saving ? 'Salvando...' : 'Criar produto'}
+                  {saving ? 'Salvando...' : editingId ? 'Salvar alterações' : 'Criar produto'}
                 </Button>
               </div>
             </form>
@@ -131,13 +173,22 @@ export default function ProductsPage() {
                     <TableCell>
                       <Badge variant={p.active ? 'success' : 'muted'}>{p.active ? 'Ativo' : 'Inativo'}</Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="space-x-2">
+                      <Button variant="outline" size="sm" onClick={() => startEdit(p)}>
+                        Editar
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => toggleProductActive(p)}>
+                        {p.active ? 'Desativar' : 'Ativar'}
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setExpandedProductId(expandedProductId === p.id ? null : p.id)}
                       >
                         {expandedProductId === p.id ? 'Fechar' : 'Fornecedores'}
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => deleteProduct(p)}>
+                        Excluir
                       </Button>
                     </TableCell>
                   </TableRow>
