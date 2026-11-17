@@ -4,34 +4,39 @@ import { mapPaymentStatus } from './mapStatus';
 
 /**
  * Faz o parse de um payload de webhook da Appmax para o formato interno.
- * Aceita algumas variações de nomenclatura de campos (event/type,
- * id/event_id, data.id/transaction_id) para robustez, já que o formato
- * exato deve ser confirmado contra a conta real (ver `apphooks`).
+ *
+ * Formato confirmado em docs.appmax.com.br/guides/webhooks-painel (os
+ * "webhooks do painel", que é o que uma loja única como a Fazzo recebe —
+ * diferente do envelope dos webhooks de Appstore):
+ *   { "environment": "production", "event": "OrderPaid", "data": { "id": 99042, "status": "aprovado", ... } }
+ *
+ * Não existe nenhum id de evento único no payload — nem aqui nem nos
+ * webhooks de Appstore. A própria Appmax recomenda (docs, "Boas Práticas")
+ * deduplicar por `evento + id do recurso`, porque o mesmo pedido (data.id)
+ * aparece em vários eventos diferentes ao longo do ciclo de vida (OrderPaid,
+ * OrderIntegrated, etc.) — usar só o id do recurso trataria o 2º evento
+ * legítimo como duplicata do 1º.
  */
 export function parseAppmaxWebhook(payload: Record<string, unknown>): AppmaxWebhookEvent {
   const data = (payload.data as Record<string, unknown> | undefined) ?? payload;
 
-  const eventId =
-    (payload.id as string | undefined) ??
-    (payload.event_id as string | undefined) ??
-    (data.id as string | undefined) ??
-    cryptoRandomFallback(payload);
-
   const eventType = (payload.event as string | undefined) ?? (payload.type as string | undefined) ?? 'unknown';
 
-  const transactionId = String(
+  const resourceId = String(
     (data.transaction_id as string | number | undefined) ??
       (data.payment_id as string | number | undefined) ??
       (data.id as string | number | undefined) ??
       '',
   );
 
+  const eventId = resourceId ? `${eventType}:${resourceId}` : cryptoRandomFallback(payload);
+
   const orderNumber =
     (data.external_reference as string | undefined) ?? (data.order_external_reference as string | undefined);
 
   const status = mapPaymentStatus(String((data.status as string | undefined) ?? 'pending'));
 
-  return { eventId: String(eventId), eventType, transactionId, orderNumber, status, raw: payload };
+  return { eventId, eventType, transactionId: resourceId, orderNumber, status, raw: payload };
 }
 
 // Fallback determinístico para não quebrar idempotência se o payload não

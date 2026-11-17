@@ -27,22 +27,37 @@ describe('orderStatusFromPaymentStatus', () => {
 });
 
 describe('parseAppmaxWebhook', () => {
-  it('extrai campos de um payload padrão com data aninhado', () => {
+  it('extrai campos do envelope real de webhook do painel (docs.appmax.com.br/guides/webhooks-painel)', () => {
     const event = parseAppmaxWebhook({
-      id: 'evt_123',
-      event: 'payment.updated',
-      data: { id: 'txn_1', status: 'approved', external_reference: 'DB-ABC-123' },
+      environment: 'production',
+      event: 'OrderPaid',
+      data: { id: 99042, status: 'aprovado', customer_id: 17 },
     });
-    expect(event.eventId).toBe('evt_123');
-    expect(event.transactionId).toBe('txn_1');
+    expect(event.eventType).toBe('OrderPaid');
+    expect(event.transactionId).toBe('99042');
     expect(event.status).toBe('pagamento_aprovado');
-    expect(event.orderNumber).toBe('DB-ABC-123');
   });
 
-  it('gera o mesmo eventId de fallback para o mesmo payload (idempotência determinística)', () => {
-    const payload = { type: 'payment.updated', data: { payment_id: 'txn_2', status: 'pending' } };
+  it('não trata dois eventos diferentes do mesmo pedido como duplicados', () => {
+    // Webhooks do painel não trazem nenhum id de evento único — só o id do
+    // pedido, que se repete em vários eventos do mesmo ciclo de vida.
+    // A chave de idempotência precisa incluir o tipo do evento também.
+    const paid = parseAppmaxWebhook({ event: 'OrderPaid', data: { id: 99042, status: 'aprovado' } });
+    const integrated = parseAppmaxWebhook({ event: 'OrderIntegrated', data: { id: 99042, status: 'aprovado' } });
+    expect(paid.eventId).not.toBe(integrated.eventId);
+  });
+
+  it('gera o mesmo eventId para o mesmo payload (idempotência determinística em retries)', () => {
+    const payload = { event: 'OrderPaid', data: { id: 'txn_2', status: 'pending' } };
     const a = parseAppmaxWebhook(payload);
     const b = parseAppmaxWebhook(payload);
     expect(a.eventId).toBe(b.eventId);
+  });
+
+  it('usa um fallback por hash só quando não há id algum no payload', () => {
+    const a = parseAppmaxWebhook({ event: 'OrderPaid', data: { status: 'aprovado' } });
+    const b = parseAppmaxWebhook({ event: 'OrderPaid', data: { status: 'aprovado' } });
+    expect(a.eventId).toBe(b.eventId);
+    expect(a.eventId).toMatch(/^fallback-/);
   });
 });
