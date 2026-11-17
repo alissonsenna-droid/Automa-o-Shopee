@@ -3,14 +3,19 @@ import { calculateOfferProfit } from '@/lib/financial';
 import { formatCentsToBRL, toCents } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AdSpendCell } from './ad-spend-cell';
 
 export const dynamic = 'force-dynamic';
+
+function readAdSpend(metadata: Record<string, unknown>): number {
+  return typeof metadata.ad_spend === 'number' ? metadata.ad_spend : 0;
+}
 
 /**
  * Visão específica para TESTE DE PRODUTOS: por oferta, mostra pedidos,
  * conversão aproximada (pedidos pagos / total), faturamento, custo e lucro.
- * CPA/ROI aparecem quando um custo de tráfego for informado na oferta
- * (metadata.ad_spend) — por ora, calculado sem CPA (fica null).
+ * CPA/ROI usam o gasto com tráfego informado manualmente por oferta
+ * (metadata.ad_spend, editável na própria tabela).
  */
 export default async function ProductTestingDashboard() {
   const supabase = createSupabaseAdminClient();
@@ -21,11 +26,13 @@ export default async function ProductTestingDashboard() {
   const rows = (offers ?? []).map((offer) => {
     const offerOrders = (orders ?? []).filter((o) => o.offer_id === offer.id);
     const paidOrders = offerOrders.filter((o) => o.status !== 'pending_payment' && o.status !== 'cancelled');
-    const result = calculateOfferProfit({ orders: offerOrders });
+    const adSpend = readAdSpend(offer.metadata ?? {});
+    const result = calculateOfferProfit({ orders: offerOrders, totalAdSpend: adSpend > 0 ? adSpend : undefined });
     const conversion = offerOrders.length > 0 ? paidOrders.length / offerOrders.length : 0;
 
     return {
       offer,
+      adSpend,
       totalOrdersCount: offerOrders.length,
       conversion,
       ...result,
@@ -48,6 +55,9 @@ export default async function ProductTestingDashboard() {
                 <TableHead>Custo</TableHead>
                 <TableHead>Lucro</TableHead>
                 <TableHead>Margem</TableHead>
+                <TableHead>Gasto c/ tráfego</TableHead>
+                <TableHead>CPA</TableHead>
+                <TableHead>ROI</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -64,6 +74,13 @@ export default async function ProductTestingDashboard() {
                     {formatCentsToBRL(toCents(row.profit))}
                   </TableCell>
                   <TableCell>{(row.margin * 100).toFixed(0)}%</TableCell>
+                  <TableCell>
+                    <AdSpendCell offerId={row.offer.id} initialValue={row.adSpend} metadata={row.offer.metadata ?? {}} />
+                  </TableCell>
+                  <TableCell>{row.cpa != null ? formatCentsToBRL(toCents(row.cpa)) : '—'}</TableCell>
+                  <TableCell className={row.roi != null && row.roi < 1 ? 'text-destructive' : ''}>
+                    {row.roi != null ? `${(row.roi * 100).toFixed(0)}%` : '—'}
+                  </TableCell>
                   <TableCell>{row.offer.active ? 'Ativa' : 'Pausada'}</TableCell>
                 </TableRow>
               ))}
