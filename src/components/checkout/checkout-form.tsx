@@ -23,7 +23,6 @@ const formSchema = z.object({
   number: z.string().min(1),
   complement: z.string().optional(),
   neighborhood: z.string().min(2),
-  payment_method: z.enum(['pix', 'credit_card']),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -47,7 +46,7 @@ export function CheckoutForm({ sessionId }: { sessionId: string }) {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(formSchema), defaultValues: { payment_method: 'pix' } });
+  } = useForm<FormValues>({ resolver: zodResolver(formSchema) });
 
   async function onSubmit(values: FormValues) {
     setSubmitting(true);
@@ -69,10 +68,9 @@ export function CheckoutForm({ sessionId }: { sessionId: string }) {
             complement: values.complement,
             neighborhood: values.neighborhood,
           },
-          payment:
-            values.payment_method === 'pix'
-              ? { method: 'pix' }
-              : { method: 'credit_card', card_token: 'TOKEN_DE_TESTE', installments: 1 },
+          // Cartão fica desativado na UI (ver rádio abaixo) até a tokenização
+          // real via Appmax JS existir — só Pix é um método de verdade hoje.
+          payment: { method: 'pix' },
         }),
       });
 
@@ -82,10 +80,10 @@ export function CheckoutForm({ sessionId }: { sessionId: string }) {
         return;
       }
 
-      // Pix: o pedido foi criado, mas o cliente ainda precisa pagar — mostramos
+      // O pedido foi criado, mas o cliente ainda precisa pagar — mostramos
       // o QR Code / copia-e-cola aqui em vez de já mandar para o
       // acompanhamento (senão ele nunca veria como pagar).
-      if (values.payment_method === 'pix' && data.pix) {
+      if (data.pix) {
         setOrderNumber(data.order.order_number);
         setPixResult(data.pix);
         return;
