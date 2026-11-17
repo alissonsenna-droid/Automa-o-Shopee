@@ -13,6 +13,25 @@ describe('mapPaymentStatus', () => {
   it('cai em aguardando_pagamento para status desconhecido', () => {
     expect(mapPaymentStatus('algo-novo-da-appmax')).toBe('aguardando_pagamento');
   });
+
+  it('mapeia a lista oficial completa de status de pedido (docs.appmax.com.br/guides/status-pedidos)', () => {
+    expect(mapPaymentStatus('pendente')).toBe('aguardando_pagamento');
+    expect(mapPaymentStatus('autorizado')).toBe('aguardando_pagamento');
+    expect(mapPaymentStatus('aprovado')).toBe('pagamento_aprovado');
+    expect(mapPaymentStatus('integrado')).toBe('pagamento_aprovado');
+    expect(mapPaymentStatus('pendente_integracao')).toBe('pagamento_aprovado');
+    expect(mapPaymentStatus('pendente_integracao_em_analise')).toBe('pagamento_aprovado');
+    expect(mapPaymentStatus('cancelado')).toBe('pagamento_cancelado');
+    expect(mapPaymentStatus('estornado')).toBe('pagamento_cancelado');
+    expect(mapPaymentStatus('recusado_por_risco')).toBe('pagamento_recusado');
+    expect(mapPaymentStatus('chargeback_em_tratativa')).toBe('pagamento_cancelado');
+    expect(mapPaymentStatus('chargeback_em_disputa')).toBe('pagamento_cancelado');
+    expect(mapPaymentStatus('chargeback_perdido')).toBe('pagamento_cancelado');
+  });
+
+  it('trata chargeback_vencido como pagamento aprovado (Appmax ganhou a disputa, crédito de volta)', () => {
+    expect(mapPaymentStatus('chargeback_vencido')).toBe('pagamento_aprovado');
+  });
 });
 
 describe('orderStatusFromPaymentStatus', () => {
