@@ -4,7 +4,11 @@ export const MARKETPLACES = ['mercado_livre', 'shopee', 'tiktok_shop', 'outro'] 
 
 export const createFulfillmentOrderSchema = z.object({
   source: z.string().min(1).default('cartipanda'),
-  external_order_id: z.string().trim().min(1).optional(),
+  external_order_id: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v ? v : undefined)),
   marketplace: z.enum(MARKETPLACES),
   product_description: z.string().trim().min(1, 'Descreva o que precisa comprar.'),
   product_url: z.string().trim().url().optional().or(z.literal('')),

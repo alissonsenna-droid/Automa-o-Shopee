@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createCheckoutSessionSchema, submitCheckoutSchema } from '@/lib/validations/checkout';
 import { duplicateOfferSchema } from '@/lib/validations/offers';
 import { updateOrderSchema } from '@/lib/validations/orders';
+import { createFulfillmentOrderSchema } from '@/lib/validations/fulfillment';
 
 describe('createCheckoutSessionSchema', () => {
   it('exige offer_id ou offer_slug', () => {
@@ -59,6 +60,35 @@ describe('duplicateOfferSchema', () => {
   it('exige nome e slug válidos', () => {
     expect(duplicateOfferSchema.safeParse({ name: 'Oferta X', slug: 'Slug Invalido' }).success).toBe(false);
     expect(duplicateOfferSchema.safeParse({ name: 'Oferta X', slug: 'slug-valido' }).success).toBe(true);
+  });
+});
+
+describe('createFulfillmentOrderSchema', () => {
+  const base = {
+    marketplace: 'mercado_livre',
+    product_description: 'Fone bluetooth',
+    customer_name: 'Teste Fazzo',
+  };
+
+  it('aceita external_order_id vazio (campo opcional deixado em branco no formulário)', () => {
+    const result = createFulfillmentOrderSchema.safeParse({ ...base, external_order_id: '' });
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.external_order_id).toBeUndefined();
+  });
+
+  it('aceita external_order_id ausente', () => {
+    const result = createFulfillmentOrderSchema.safeParse(base);
+    expect(result.success).toBe(true);
+  });
+
+  it('mantém external_order_id quando informado', () => {
+    const result = createFulfillmentOrderSchema.safeParse({ ...base, external_order_id: 'CP-123' });
+    expect(result.success && result.data.external_order_id).toBe('CP-123');
+  });
+
+  it('rejeita sem nome do cliente ou descrição do produto', () => {
+    expect(createFulfillmentOrderSchema.safeParse({ marketplace: 'mercado_livre', customer_name: 'X' }).success).toBe(false);
+    expect(createFulfillmentOrderSchema.safeParse({ marketplace: 'mercado_livre', product_description: 'Y' }).success).toBe(false);
   });
 });
 
