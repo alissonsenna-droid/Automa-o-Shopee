@@ -1,0 +1,14 @@
+-- POST /api/orders checa "já existe um pedido pra essa checkout_session?"
+-- antes de inserir, mas isso sozinho é uma corrida: duas requisições quase
+-- simultâneas (duplo clique rápido, ou um retry de rede enquanto a primeira
+-- ainda está em voo) passam pela checagem ao mesmo tempo, antes de qualquer
+-- uma commitar, e as duas seguem pra criar pedido + cobrar o cliente na
+-- Appmax de verdade — cobrança duplicada real, não só pedido duplicado no
+-- banco.
+--
+-- Sem constraint nenhuma na coluna até agora (só a foreign key). Um índice
+-- único fecha a corrida de verdade: a segunda inserção falha no banco
+-- (23505) em vez de só "quase nunca acontecer" na aplicação. Parcial
+-- (`where checkout_session_id is not null`) porque a coluna aceita null
+-- (on delete set null na FK) e múltiplos nulls não devem colidir.
+create unique index orders_checkout_session_id_key on orders (checkout_session_id) where checkout_session_id is not null;

@@ -16,8 +16,15 @@ import { logAudit } from '@/lib/audit';
  * Appmax e persiste o resultado.
  *
  * Idempotência: se a mesma checkout_session já gerou um pedido (order_id
- * preenchido) ou o mesmo idempotency_key já foi usado, retorna o pedido
- * existente em vez de criar um duplicado (ex: duplo clique no botão pagar).
+ * preenchido ou checkout_session_id já usado em outro pedido), retorna o
+ * pedido existente em vez de criar um duplicado (ex: duplo clique no botão
+ * pagar). A checagem acontece duas vezes de propósito: a consulta abaixo
+ * cobre o caso comum sem gastar uma inserção; a unique constraint em
+ * orders(checkout_session_id) (migration 011) fecha a corrida de verdade
+ * pra duas requisições quase simultâneas, que passariam pela consulta ao
+ * mesmo tempo. `idempotency_key` continua aceito no payload por
+ * compatibilidade com o formulário, mas não é usado pra isso — o
+ * checkout_session_id já identifica a tentativa de compra de forma única.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -116,7 +123,17 @@ export async function POST(request: NextRequest) {
       })
       .select('*')
       .single();
-    if (orderError) throw orderError;
+    if (orderError) {
+      // unique_violation em orders_checkout_session_id_key (migration 011):
+      // outra requisição pra essa mesma sessão já ganhou a corrida e criou
+      // o pedido entre a checagem acima e este insert — não é erro de
+      // verdade, é a proteção contra cobrança duplicada funcionando.
+      if (orderError.code === '23505') {
+        const { data: raceWinner } = await supabase.from('orders').select('*').eq('checkout_session_id', session.id).single();
+        if (raceWinner) return NextResponse.json({ order: raceWinner, idempotent: true }, { status: 200 });
+      }
+      throw orderError;
+    }
 
     await supabase.from('checkout_sessions').update({ order_id: order.id }).eq('id', session.id);
 
