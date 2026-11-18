@@ -93,7 +93,7 @@ export default function AutomacaoPage() {
   async function load() {
     setLoading(true);
     const qs = statusFilter === 'all' ? '' : `?status=${statusFilter}`;
-    const res = await fetch(`/api/fulfillment${qs}`);
+    const res = await fetch(`/api/fulfillment-orders${qs}`);
     const data = await res.json();
     setRows(data.fulfillment_orders ?? []);
     setLoading(false);
@@ -107,7 +107,7 @@ export default function AutomacaoPage() {
   async function createOrder() {
     setSaving(true);
     setFormError(null);
-    const res = await fetch('/api/fulfillment', {
+    const res = await fetch('/api/fulfillment-orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
@@ -136,7 +136,7 @@ export default function AutomacaoPage() {
   async function markAsBought(id: string) {
     const draft = buyDraft[id];
     setActingId(id);
-    await fetch(`/api/fulfillment/${id}`, {
+    await fetch(`/api/fulfillment-orders/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -153,7 +153,7 @@ export default function AutomacaoPage() {
     const reason = problemDraft[id]?.trim();
     if (!reason) return;
     setActingId(id);
-    await fetch(`/api/fulfillment/${id}`, {
+    await fetch(`/api/fulfillment-orders/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'problem', notes: reason }),
@@ -327,6 +327,15 @@ export default function AutomacaoPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-2 min-w-[220px]">
+                        {row.marketplace === 'mercado_livre' && row.product_url && (
+                          <Button
+                            size="sm"
+                            variant="accent"
+                            onClick={() => window.open(`${row.product_url}#fazzo_so=${row.id}`, '_blank', 'noopener')}
+                          >
+                            Abrir com dados preenchidos
+                          </Button>
+                        )}
                         <Button size="sm" variant="outline" onClick={() => copyData(row)}>
                           {copiedId === row.id ? 'Copiado!' : 'Copiar dados do cliente'}
                         </Button>
