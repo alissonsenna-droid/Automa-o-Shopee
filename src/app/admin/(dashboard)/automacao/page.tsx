@@ -18,6 +18,10 @@ const MARKETPLACE_LABEL: Record<string, string> = {
   outro: 'Outro',
 };
 
+// Marketplaces com suporte da extensão fazzo-order-automation (preenchimento
+// automático do checkout). "outro" nunca tem, por definição.
+const EXTENSION_SUPPORTED_MARKETPLACES: string[] = ['mercado_livre', 'shopee', 'tiktok_shop'];
+
 const STATUS_VARIANT: Record<SupplierOrderStatus, 'default' | 'success' | 'warning' | 'destructive' | 'muted'> = {
   pending: 'warning',
   sent: 'default',
@@ -372,7 +376,7 @@ export default function AutomacaoPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-2 min-w-[220px]">
-                        {row.marketplace === 'mercado_livre' && row.product_url && (
+                        {EXTENSION_SUPPORTED_MARKETPLACES.includes(row.marketplace) && row.product_url && (
                           <Button
                             size="sm"
                             variant="accent"
