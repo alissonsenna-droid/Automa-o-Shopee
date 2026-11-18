@@ -24,7 +24,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: 'Pedido de automação não encontrado.' }, { status: 404 });
     }
 
-    const { data, error } = await supabase.from('fulfillment_orders').update(input).eq('id', id).select('*').single();
+    const update: Record<string, unknown> = { ...input };
+    if ('product_url' in update) update.product_url = input.product_url || null;
+    if ('customer_email' in update) update.customer_email = input.customer_email || null;
+
+    const { data, error } = await supabase.from('fulfillment_orders').update(update).eq('id', id).select('*').single();
     if (error) throw error;
 
     await logAudit({ userId, action: 'fulfillment_order.updated', entity: 'fulfillment_orders', entityId: id, metadata: input });

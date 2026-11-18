@@ -28,9 +28,8 @@ export const createFulfillmentOrderSchema = z.object({
   notes: z.string().trim().optional(),
 });
 
-export const updateFulfillmentOrderSchema = z.object({
+export const updateFulfillmentOrderSchema = createFulfillmentOrderSchema.partial().extend({
   status: z.enum(['pending', 'sent', 'confirmed', 'shipped', 'cancelled', 'problem']).optional(),
   supplier_cost: z.coerce.number().min(0).optional(),
   purchase_order_number: z.string().trim().optional(),
-  notes: z.string().trim().optional(),
 });

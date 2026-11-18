@@ -82,6 +82,7 @@ export default function AutomacaoPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<SupplierOrderStatus | 'all'>('pending');
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -104,11 +105,44 @@ export default function AutomacaoPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
-  async function createOrder() {
+  function startCreate() {
+    setEditingId(null);
+    setForm(emptyForm);
+    setFormError(null);
+    setShowForm(true);
+  }
+
+  function startEdit(row: FulfillmentOrder) {
+    setEditingId(row.id);
+    setForm({
+      source: row.source,
+      external_order_id: row.external_order_id ?? '',
+      marketplace: row.marketplace,
+      product_description: row.product_description,
+      product_url: row.product_url ?? '',
+      quantity: String(row.quantity),
+      sale_price: String(row.sale_price),
+      customer_name: row.customer_name,
+      customer_cpf: row.customer_cpf ?? '',
+      customer_phone: row.customer_phone ?? '',
+      customer_email: row.customer_email ?? '',
+      address_cep: row.address_cep ?? '',
+      address_street: row.address_street ?? '',
+      address_number: row.address_number ?? '',
+      address_complement: row.address_complement ?? '',
+      address_neighborhood: row.address_neighborhood ?? '',
+      address_city: row.address_city ?? '',
+      address_state: row.address_state ?? '',
+    });
+    setFormError(null);
+    setShowForm(true);
+  }
+
+  async function saveOrder() {
     setSaving(true);
     setFormError(null);
-    const res = await fetch('/api/fulfillment-orders', {
-      method: 'POST',
+    const res = await fetch(editingId ? `/api/fulfillment-orders/${editingId}` : '/api/fulfillment-orders', {
+      method: editingId ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     });
@@ -119,6 +153,7 @@ export default function AutomacaoPage() {
       return;
     }
     setForm(emptyForm);
+    setEditingId(null);
     setShowForm(false);
     load();
   }
@@ -174,13 +209,23 @@ export default function AutomacaoPage() {
             direto no checkout do marketplace, e marque como comprado depois de pagar lá.
           </p>
         </div>
-        <Button onClick={() => setShowForm((v) => !v)}>{showForm ? 'Cancelar' : '+ Novo pedido'}</Button>
+        <Button
+          onClick={() => {
+            if (showForm) {
+              setShowForm(false);
+            } else {
+              startCreate();
+            }
+          }}
+        >
+          {showForm ? 'Cancelar' : '+ Novo pedido'}
+        </Button>
       </div>
 
       {showForm && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Novo pedido de automação</CardTitle>
+            <CardTitle className="text-base">{editingId ? 'Editar pedido de automação' : 'Novo pedido de automação'}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -270,8 +315,8 @@ export default function AutomacaoPage() {
 
             {formError && <p className="sm:col-span-2 text-sm text-destructive">{formError}</p>}
             <div className="sm:col-span-2">
-              <Button onClick={createOrder} disabled={saving || !form.customer_name || !form.product_description}>
-                {saving ? 'Salvando...' : 'Salvar pedido'}
+              <Button onClick={saveOrder} disabled={saving || !form.customer_name || !form.product_description}>
+                {saving ? 'Salvando...' : editingId ? 'Salvar alterações' : 'Salvar pedido'}
               </Button>
             </div>
           </CardContent>
@@ -338,6 +383,9 @@ export default function AutomacaoPage() {
                         )}
                         <Button size="sm" variant="outline" onClick={() => copyData(row)}>
                           {copiedId === row.id ? 'Copiado!' : 'Copiar dados do cliente'}
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => startEdit(row)}>
+                          Editar
                         </Button>
                         {row.status === 'pending' && (
                           <>
