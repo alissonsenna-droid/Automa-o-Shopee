@@ -11,6 +11,8 @@ import type { Supplier, SupplierPlatform } from '@/types/database';
 
 const PLATFORM_LABEL: Record<SupplierPlatform, string> = {
   shopee: 'Shopee',
+  mercado_livre: 'Mercado Livre',
+  tiktok_shop: 'TikTok Shop',
   supplier_direct: 'Direto com fornecedor',
   manual: 'Manual',
   api: 'API',

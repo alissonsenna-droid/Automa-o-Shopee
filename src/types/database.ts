@@ -2,7 +2,7 @@
 // Se preferir, substitua por tipos gerados: `supabase gen types typescript`.
 
 export type UserRole = 'admin' | 'operator';
-export type SupplierPlatform = 'shopee' | 'supplier_direct' | 'manual' | 'api' | 'other';
+export type SupplierPlatform = 'shopee' | 'mercado_livre' | 'tiktok_shop' | 'supplier_direct' | 'manual' | 'api' | 'other';
 
 export type PaymentStatus =
   | 'aguardando_pagamento'
