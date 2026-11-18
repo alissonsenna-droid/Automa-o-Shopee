@@ -137,13 +137,23 @@ async function createSupplierOrderForPaidOrder(supabase: ReturnType<typeof creat
     return;
   }
 
-  await supabase.from('supplier_orders').insert({
+  const { error: insertError } = await supabase.from('supplier_orders').insert({
     order_id: orderId,
     supplier_id: best.supplier_id,
     status: 'pending',
     supplier_cost: best.supplier_cost * firstItem.quantity,
     notes: 'Ordem gerada automaticamente após pagamento aprovado — aguardando envio ao fornecedor (ver fila de ações pendentes).',
   });
+
+  if (insertError) {
+    // 23505 (unique_violation em supplier_orders.order_id): outro evento de
+    // webhook pro mesmo pedido (ex: OrderPaid e OrderApproved quase juntos)
+    // ganhou a corrida e já criou — não é erro de verdade. Qualquer outro
+    // código de erro precisa propagar, senão o pedido fica preso sem
+    // supplier_order e sem ninguém saber por quê.
+    if (insertError.code !== '23505') throw insertError;
+    return;
+  }
 
   await supabase.from('orders').update({ status: 'supplier_pending' }).eq('id', orderId);
 }
