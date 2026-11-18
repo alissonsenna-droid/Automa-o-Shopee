@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: message, order_id: order.id }, { status: 402 });
     }
 
-    await supabase.from('payments').insert({
+    const { error: paymentInsertError } = await supabase.from('payments').insert({
       order_id: order.id,
       provider: 'appmax',
       transaction_id: paymentResult.transactionId,
@@ -213,6 +213,23 @@ export async function POST(request: NextRequest) {
       payment_method: input.payment.method,
       raw_response: paymentResult.raw as Record<string, unknown>,
     });
+    if (paymentInsertError) {
+      // Não interrompe a resposta pro cliente (a cobrança na Appmax já
+      // aconteceu de verdade nesse ponto) — mas isso não pode desaparecer
+      // em silêncio, senão a reconciliação financeira fica sem esse
+      // pagamento registrado.
+      console.error('Falha ao gravar registro de pagamento (cobrança na Appmax já efetuada)', {
+        orderId: order.id,
+        transactionId: paymentResult.transactionId,
+        error: paymentInsertError,
+      });
+      await logAudit({
+        action: 'payment.insert_failed',
+        entity: 'orders',
+        entityId: order.id,
+        metadata: { transactionId: paymentResult.transactionId, error: paymentInsertError.message },
+      });
+    }
 
     const { data: updatedOrder } = await supabase
       .from('orders')
