@@ -12,10 +12,21 @@ import type { SupplierOrder, SupplierPlatform, SupplierOrderStatus } from '@/typ
 
 const PLATFORM_LABEL: Record<SupplierPlatform, string> = {
   shopee: 'Shopee',
+  mercado_livre: 'Mercado Livre',
+  tiktok_shop: 'TikTok Shop',
   supplier_direct: 'Direto com fornecedor',
   manual: 'Manual',
   api: 'API',
   other: 'Outro',
+};
+
+// Plataformas com suporte da extensão fazzo-order-automation (preenchimento
+// automático do checkout). As demais continuam 100% manuais.
+const AUTOFILL_SUPPORTED: Partial<Record<SupplierPlatform, { label: string; fallbackSearchUrl: (query: string) => string }>> = {
+  mercado_livre: {
+    label: 'Processar no Mercado Livre',
+    fallbackSearchUrl: (q) => `https://lista.mercadolivre.com.br/${encodeURIComponent(q)}`,
+  },
 };
 
 const STATUS_VARIANT: Record<SupplierOrderStatus, 'default' | 'success' | 'warning' | 'destructive' | 'muted'> = {
@@ -125,6 +136,17 @@ export default function PixCentralPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-2">
+                        {row.suppliers && AUTOFILL_SUPPORTED[row.suppliers.platform] && (
+                          <Button
+                            size="sm"
+                            variant="accent"
+                            disabled={!row.supplier_url}
+                            title={row.supplier_url ? undefined : 'Sem link de produto cadastrado neste fornecedor — cadastre o supplier_url para habilitar.'}
+                            onClick={() => window.open(`${row.supplier_url}#fazzo_so=${row.id}`, '_blank', 'noopener')}
+                          >
+                            {AUTOFILL_SUPPORTED[row.suppliers.platform]!.label}
+                          </Button>
+                        )}
                         <Button size="sm" onClick={() => markAsBought(row.id)} disabled={actingId === row.id}>
                           Já comprei / paguei
                         </Button>
