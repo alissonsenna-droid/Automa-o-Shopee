@@ -10,3 +10,7 @@ coverage
 .vercel
 tsconfig.tsbuildinfo
 .env*
+
+# Playwright
+/test-results/
+/playwright-report/
