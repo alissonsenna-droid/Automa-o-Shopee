@@ -217,6 +217,34 @@ export interface SupplierOrder {
   updated_at: string;
 }
 
+export interface FulfillmentOrder {
+  id: string;
+  source: string;
+  external_order_id: string | null;
+  marketplace: string;
+  product_description: string;
+  product_url: string | null;
+  quantity: number;
+  sale_price: number;
+  supplier_cost: number | null;
+  customer_name: string;
+  customer_cpf: string | null;
+  customer_phone: string | null;
+  customer_email: string | null;
+  address_cep: string | null;
+  address_street: string | null;
+  address_number: string | null;
+  address_complement: string | null;
+  address_neighborhood: string | null;
+  address_city: string | null;
+  address_state: string | null;
+  status: SupplierOrderStatus;
+  purchase_order_number: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Tracking {
   id: string;
   order_id: string;
